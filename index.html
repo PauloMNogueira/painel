@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Painel">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<title>Painel</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f2;
+  --surface: #fcfcfb;
+  --surface-2: #efeee9;
+  --line: #e2e0d9;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --text-3: #75736d;
+  --accent: #2a78d6;
+  --accent-ink: #1c5cab;
+  --track: #e6e4dd;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --good: #0ca30c; --good-ink: #006300;
+  --warn: #fab219; --warn-ink: #8a5a00;
+  --crit: #d03b3b; --crit-ink: #b02a2a;
+  --neg: #d03b3b; --pos: #2a78d6;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 2px 8px rgba(0,0,0,.04);
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141413; --surface: #1a1a19; --surface-2: #232321; --line: #2e2e2b;
+    --text: #f0efec; --text-2: #c3c2b7; --text-3: #94938b;
+    --accent: #3987e5; --accent-ink: #86b6ef; --track: #2c2c29;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    --good-ink: #5fd35f; --warn-ink: #fab219; --crit-ink: #f08a8a;
+    --neg: #e66767; --pos: #3987e5;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141413; --surface: #1a1a19; --surface-2: #232321; --line: #2e2e2b;
+  --text: #f0efec; --text-2: #c3c2b7; --text-3: #94938b;
+  --accent: #3987e5; --accent-ink: #86b6ef; --track: #2c2c29;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+  --good-ink: #5fd35f; --warn-ink: #fab219; --crit-ink: #f08a8a;
+  --neg: #e66767; --pos: #3987e5;
+  --shadow: none;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+}
+.num { font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+.hidden { display: none !important; }
+.wrap { max-width: 560px; margin: 0 auto; padding: 0 16px; }
+
+/* ---------- trava ---------- */
+#trava { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+#trava form { width: 100%; max-width: 360px; display: grid; gap: 14px; }
+#trava h1 { margin: 0; font-size: 28px; letter-spacing: -.02em; }
+#trava p { margin: 0; color: var(--text-2); }
+input[type=password], input[type=text], input[type=date], input[inputmode], textarea {
+  width: 100%; font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; outline: none;
+}
+input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.check { display: flex; gap: 10px; align-items: center; color: var(--text-2); font-size: 15px; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.btn {
+  appearance: none; border: 0; border-radius: 12px; padding: 13px 16px; font-weight: 600;
+  background: var(--accent); color: #fff; cursor: pointer; width: 100%;
+}
+.btn.sec { background: var(--surface-2); color: var(--text); }
+.btn.link { background: none; color: var(--accent-ink); padding: 8px 0; width: auto; font-weight: 500; }
+.btn:disabled { opacity: .5; }
+.erro { color: var(--crit-ink); font-size: 15px; min-height: 1.4em; }
+
+/* ---------- cabeçalho ---------- */
+header.top { padding: calc(14px + env(safe-area-inset-top)) 0 6px; }
+header.top .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+header.top h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+header.top .sub { color: var(--text-3); font-size: 13px; }
+
+section.tela { padding: 6px 0 24px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin: 22px 0 8px; font-weight: 600; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.lista > * + * { border-top: 1px solid var(--line); }
+
+/* ---------- envelopes ---------- */
+.env { padding: 14px 16px; display: grid; gap: 8px; }
+.env .l1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.env .nome { font-weight: 600; }
+.env .grande { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+.env .grande small { font-size: 15px; font-weight: 500; color: var(--text-2); letter-spacing: 0; }
+.env .l3 { color: var(--text-2); font-size: 14px; }
+.meter { height: 6px; background: var(--track); border-radius: 3px; overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.pill .ic { font-size: 11px; line-height: 1; }
+.pill.verde .ic { color: var(--good); } .pill.verde { color: var(--good-ink); }
+.pill.amarelo .ic { color: var(--warn); } .pill.amarelo { color: var(--warn-ink); }
+.pill.vermelho .ic { color: var(--crit); } .pill.vermelho { color: var(--crit-ink); }
+.dica { padding: 12px 16px; font-size: 14px; color: var(--text-2); }
+.dica b { color: var(--text); }
+
+.pend { padding: 10px 16px; display: flex; gap: 10px; align-items: center; font-size: 15px; }
+.pend .d { flex: 1; min-width: 0; }
+.pend .d div:last-child { color: var(--text-3); font-size: 13px; }
+.pend .v { font-weight: 600; }
+.pend .x { border: 0; background: none; color: var(--text-3); font-size: 20px; padding: 4px 8px; cursor: pointer; }
+.tag-env { font-size: 12px; color: var(--text-3); }
+
+/* ---------- mês ---------- */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px; font-size: 14px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { padding: 12px 14px; }
+.tile .k { font-size: 13px; color: var(--text-2); }
+.tile .v { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.tile .v.neg { color: var(--crit-ink); }
+.linha { padding: 11px 16px; display: grid; gap: 6px; }
+.linha .a { display: flex; justify-content: space-between; gap: 8px; font-size: 15px; }
+.linha .a span:last-child { font-weight: 600; }
+.linha .b { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text-3); }
+.meter.dupla { position: relative; }
+.meter.dupla > i.over { background: var(--crit); position: absolute; top: 0; }
+.nota { font-size: 13px; color: var(--text-3); padding: 8px 2px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: right; padding: 9px 12px; }
+th:first-child, td:first-child { text-align: left; }
+th { font-size: 12px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+tbody tr + tr td { border-top: 1px solid var(--line); }
+td.neg { color: var(--crit-ink); font-weight: 600; } td.pos { font-weight: 600; }
+
+/* ---------- tarefas ---------- */
+.sec-t { padding: 12px 16px 4px; display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.sec-t b { font-size: 15px; }
+.tarefa { padding: 10px 16px; font-size: 15px; }
+.tarefa .det { color: var(--text-3); font-size: 13px; margin-top: 2px; }
+
+/* ---------- mais ---------- */
+.kv { padding: 10px 16px; display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.kv span:first-child { color: var(--text-2); }
+.kv span:last-child { font-weight: 600; text-align: right; }
+.kv.total span { color: var(--text); font-weight: 700; }
+.kv .obs { display: block; font-weight: 400; font-size: 12px; color: var(--text-3); }
+.legenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); padding: 12px 16px 0; }
+.legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.grafico { padding: 6px 8px 4px; position: relative; }
+.grafico svg { display: block; width: 100%; height: auto; }
+.grafico text { font-size: 11px; fill: var(--text-3); }
+.grafico .tot { fill: var(--text-2); font-weight: 600; }
+.tip { position: absolute; pointer-events: none; background: var(--text); color: var(--bg); font-size: 13px; padding: 8px 10px; border-radius: 10px; line-height: 1.35; white-space: nowrap; transform: translate(-50%, -100%); }
+.tip i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+/* ---------- navegação ---------- */
+nav.abas {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+nav.abas .wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
+nav.abas button { border: 0; background: none; padding: 9px 0 10px; font-size: 12px; color: var(--text-3); display: grid; justify-items: center; gap: 2px; cursor: pointer; }
+nav.abas button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+nav.abas button[aria-current="page"] { color: var(--accent-ink); font-weight: 600; }
+.fab {
+  position: fixed; right: max(16px, calc(50% - 264px)); bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 11;
+  width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--accent); color: #fff;
+  font-size: 30px; line-height: 1; box-shadow: 0 4px 14px rgba(0,0,0,.2); cursor: pointer;
+}
+
+/* ---------- folhas (bottom sheets) ---------- */
+.veu { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; }
+.folha {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; max-height: 92vh; overflow-y: auto;
+  background: var(--bg); border-radius: 18px 18px 0 0; padding: 10px 0 calc(16px + env(safe-area-inset-bottom));
+}
+.folha .wrap { display: grid; gap: 14px; }
+.folha .alca { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 4px; }
+.folha h3 { margin: 0; font-size: 20px; }
+.rot { font-size: 13px; color: var(--text-2); margin-bottom: 6px; }
+.valor-in { font-size: 34px !important; font-weight: 700; text-align: center; padding: 10px !important; }
+.grade-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.prev { font-size: 15px; color: var(--text-2); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.prev b { color: var(--text); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: 10px; padding: 3px; }
+.seg button { border: 0; background: none; padding: 8px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); font-weight: 600; box-shadow: var(--shadow); }
+.dois { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+textarea { font: 13px/1.4 ui-monospace, Menlo, monospace; min-height: 120px; }
+footer.rod { color: var(--text-3); font-size: 13px; text-align: center; padding: 18px 0 8px; display: grid; gap: 6px; justify-items: center; }
+</style>
+</head>
+<body>
+
+<!-- ================= TRAVA ================= -->
+<div id="trava">
+  <form id="f-trava" autocomplete="off">
+    <h1>Painel</h1>
+    <p>Digite a senha para abrir.</p>
+    <input id="senha" type="password" autocomplete="current-password" placeholder="Senha" required>
+    <label class="check"><input id="lembrar" type="checkbox" checked> Lembrar neste aparelho</label>
+    <button class="btn" id="b-abrir" type="submit">Abrir</button>
+    <div class="erro" id="erro-trava" role="alert"></div>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" class="hidden">
+  <header class="top"><div class="wrap"><h1 id="titulo">Hoje</h1><span class="sub num" id="subtitulo"></span></div></header>
+
+  <main class="wrap">
+    <section class="tela" id="t-hoje"></section>
+    <section class="tela hidden" id="t-mes"></section>
+    <section class="tela hidden" id="t-tarefas"></section>
+    <section class="tela hidden" id="t-mais"></section>
+    <footer class="rod" id="rodape"></footer>
+  </main>
+
+  <button class="fab" id="b-mais" aria-label="Lançar gasto">+</button>
+
+  <nav class="abas" aria-label="Seções"><div class="wrap">
+    <button data-aba="hoje" aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Hoje</button>
+    <button data-aba="mes"><svg viewBox="0 0 24 24"><path d="M5 19V11M10 19V6M15 19v-5M20 19V9"/></svg>Mês</button>
+    <button data-aba="tarefas"><svg viewBox="0 0 24 24"><path d="M9 7h11M9 12h11M9 17h11"/><path d="M4 7l1 1 2-2M4 12l1 1 2-2M4 17l1 1 2-2"/></svg>Tarefas</button>
+    <button data-aba="mais"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg>Reserva e apê</button>
+  </div></nav>
+</div>
+
+<!-- ================= FOLHAS ================= -->
+<div class="veu hidden" id="veu"></div>
+
+<div class="folha hidden" id="f-lancar" role="dialog" aria-modal="true" aria-labelledby="h-lancar">
+  <div class="wrap">
+    <div class="alca"></div>
+    <div class="seg" role="group" aria-label="Tipo">
+      <button type="button" data-tipo="gasto" aria-pressed="true">Gasto</button>
+      <button type="button" data-tipo="saldo" aria-pressed="false">Saldo do VR</button>
+    </div>
+    <h3 id="h-lancar">Novo gasto</h3>
+    <input id="l-valor" class="valor-in num" inputmode="decimal" placeholder="R$ 0,00" autocomplete="off">
+    <div id="l-bloco-gasto" style="display:grid;gap:14px">
+      <div><div class="rot">No quê?</div><div class="grade-chips" id="l-cats"></div></div>
+      <div><div class="rot">Pagou com</div><div class="grade-chips" id="l-formas"></div></div>
+      <input id="l-desc" type="text" placeholder="Descrição (opcional)" maxlength="60" autocomplete="off">
+    </div>
+    <input id="l-data" type="date">
+    <div class="prev" id="l-prev" aria-live="polite"></div>
+    <div class="dois"><button class="btn sec" type="button" data-fecha>Cancelar</button><button class="btn" type="button" id="l-salvar">Salvar</button></div>
+  </div>
+</div>
+
+<div class="folha hidden" id="f-simular" role="dialog" aria-modal="true" aria-labelledby="h-simular">
+  <div class="wrap">
+    <div class="alca"></div>
+    <h3 id="h-simular">E se eu gastar…</h3>
+    <input id="s-valor" class="valor-in num" inputmode="decimal" placeholder="R$ 0,00" autocomplete="off">
+    <div class="grade-chips" id="s-envs"></div>
+    <div class="prev" id="s-prev" aria-live="polite">Digite um valor.</div>
+    <button class="btn sec" type="button" data-fecha>Fechar</button>
+  </div>
+</div>
+
+<div class="folha hidden" id="f-enviar" role="dialog" aria-modal="true" aria-labelledby="h-enviar">
+  <div class="wrap">
+    <div class="alca"></div>
+    <h3 id="h-enviar">Enviar para o Claude</h3>
+    <p class="rot" style="margin:0">Cole este texto no chat. Os lançamentos somem daqui quando o painel for atualizado com eles.</p>
+    <textarea id="e-texto" readonly></textarea>
+    <div class="dois"><button class="btn sec" type="button" id="e-copiar">Copiar</button><button class="btn" type="button" id="e-compartilhar">Compartilhar</button></div>
+    <button class="btn link" type="button" data-fecha>Fechar</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   Painel — tudo roda no aparelho. Os dados chegam cifrados (dados.enc,
+   AES-GCM com chave PBKDF2 da senha) e só são decifrados aqui.
+   ========================================================================= */
+
+const K = { chave: "painel.chave.v1", enc: "painel.enc.v1", pend: "painel.pendentes.v1", aba: "painel.aba" };
+const ls = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const brl = (v, cent = true) => (v < 0 ? "−" : "") + "R$ " + Math.abs(v).toLocaleString("pt-BR", { minimumFractionDigits: cent ? 2 : 0, maximumFractionDigits: cent ? 2 : 0 });
+const brl0 = (v) => brl(Math.round(v), false);
+const parseValor = (s) => { const n = parseFloat(String(s).replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".")); return isFinite(n) ? n : NaN; };
+
+/* ---------------- datas (dias inteiros em UTC, sem fuso) ---------------- */
+const dn = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Date.UTC(y, m - 1, d) / 864e5; };
+const isoDe = (n) => new Date(n * 864e5).toISOString().slice(0, 10);
+const hojeISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const dim = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();          // m = 1..12
+const dia = (y, m, d) => Date.UTC(y, m - 1, Math.min(d, dim(y, m))) / 864e5;
+const ddmm = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const nomeMes = (ym, ano = true) => MESES[+ym.slice(5, 7) - 1] + (ano ? "/" + ym.slice(2, 4) : "");
+const DIAS_SEM = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+function ciclo(hoje, renova) {
+  const [y, m] = hoje.split("-").map(Number);
+  let iy = y, im = m, ini = dia(y, m, renova);
+  if (ini > dn(hoje)) { im = m - 1; if (im < 1) { im = 12; iy--; } ini = dia(iy, im, renova); }
+  let py = iy, pm = im + 1; if (pm > 12) { pm = 1; py++; }
+  return [ini, dia(py, pm, renova) - 1];
+}
+
+/* ---------------- cripto ---------------- */
+const b64d = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const b64e = (u8) => btoa(String.fromCharCode(...new Uint8Array(u8)));
+async function chaveDaSenha(senha, blob) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(senha), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: b64d(blob.sal), iterations: blob.iter },
+    base, { name: "AES-GCM", length: 256 }, true, ["decrypt"]);
+}
+async function decifrar(blob, chave) {
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64d(blob.iv) }, chave, b64d(blob.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+/* ---------------- estado ---------------- */
+let D = null;            // pacote decifrado
+let mesSel = null;       // mês escolhido na aba Mês
+const CATS = [
+  { id: "comida_fora", nome: "Comida fora", env: "lazer" },
+  { id: "lazer", nome: "Lazer", env: "lazer" },
+  { id: "compras", nome: "Compras", env: "compras" },
+  { id: "mercado", nome: "Mercado", env: "mercado" },
+  { id: "combustivel", nome: "Combustível", env: "combustivel" },
+  { id: "saude", nome: "Saúde", env: "saude" },
+  { id: "eventos", nome: "Eventos", env: "eventos" },
+  { id: "outro", nome: "Outro", env: null },
+];
+const FORMAS = [
+  { id: "VR", nome: "VR" },
+  { id: "Nubank", nome: "Nubank crédito" },
+  { id: "Pix Nubank", nome: "Pix/débito Nubank" },
+  { id: "Bradesco", nome: "Pix/débito Bradesco" },
+];
+const envDaCat = (cat, forma) => (forma === "VR" ? "vr" : (CATS.find((c) => c.id === cat) || {}).env || null);
+
+function pendentes() { try { return JSON.parse(ls.get(K.pend) || "[]"); } catch { return []; } }
+function salvarPendentes(p) { ls.set(K.pend, JSON.stringify(p)); }
+function limparSincronizados() {
+  if (!D) return;
+  const ja = new Set(D.diario_ids || []);
+  const p = pendentes(); const resto = p.filter((x) => !ja.has(x.id));
+  if (resto.length !== p.length) salvarPendentes(resto);
+}
+
+/* ---------------- envelopes (mesma conta do motor.py) ---------------- */
+function lancsEnvelope(extra) {
+  const base = (D.env_lancs || []).map((l) => ({ ...l }));
+  pendentes().forEach((p, i) => base.push({
+    id: p.id, seq: 1e9 + i, data: p.data, valor: p.valor,
+    envelope: p.categoria === "saldo_vr" ? "vr" : envDaCat(p.categoria, p.forma),
+    saldo_vr: p.categoria === "saldo_vr",
+  }));
+  if (extra) base.push({ id: "_sim", seq: 2e9, ...extra });
+  return base;
+}
+
+function calcularEnvelopes(hoje, extra) {
+  const H = dn(hoje), inicioPainel = dn(D.inicio_painel), lancs = lancsEnvelope(extra);
+  return D.envelopes.map((env) => {
+    const [ini, fim] = ciclo(hoje, env.renova_dia);
+    const diasCiclo = fim - ini + 1;
+    let desde = Math.max(ini, inicioPainel);
+    let orc = env.mensal * (fim - desde + 1) / diasCiclo;
+    if (env.acumula) {
+      const [hy, hm] = hoje.split("-").map(Number), [py, pm] = D.inicio_painel.split("-").map(Number);
+      orc = env.mensal * ((hy - py) * 12 + hm - pm + 1); desde = inicioPainel;
+    }
+    const doEnv = lancs.filter((l) => l.envelope === env.id && !l.saldo_vr && l.valor > 0);
+    let gasto = doEnv.filter((l) => { const d = dn(l.data); return d >= desde && d <= H; }).reduce((s, l) => s + l.valor, 0);
+    let restante = orc - gasto, saldo = null;
+    if (env.id === "vr") {
+      const saldos = lancs.filter((l) => l.saldo_vr && dn(l.data) >= ini && dn(l.data) <= H)
+        .sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : a.seq - b.seq));
+      if (saldos.length) {
+        const u = saldos[saldos.length - 1];
+        const depois = doEnv.filter((l) => (l.data > u.data || (l.data === u.data && l.seq > u.seq)) && dn(l.data) <= H);
+        gasto = depois.reduce((s, l) => s + l.valor, 0);
+        restante = u.valor - gasto; orc = u.valor; saldo = u;
+      }
+    }
+    const diasRest = fim - H + 1;
+    let prop;
+    if (env.acumula) prop = restante >= 0 ? 1 : 0;
+    else if (env.por_dia) prop = (Math.max(restante, 0) / diasRest) / (env.mensal / diasCiclo);
+    else { const esp = env.mensal * diasRest / diasCiclo; prop = esp ? Math.max(restante, 0) / esp : 1; }
+    const ritmo = prop >= 0.95 ? "verde" : prop >= 0.7 ? "amarelo" : "vermelho";
+    return { ...env, orc, gasto, restante, porDia: env.por_dia ? Math.max(restante, 0) / diasRest : null,
+             diasRest, renovaEm: isoDe(fim + 1), ritmo, saldo };
+  });
+}
+
+const RITMO = { verde: ["●", "folga"], amarelo: ["▲", "atenção"], vermelho: ["■", "apertado"] };
+const pill = (r) => `<span class="pill ${r}"><span class="ic" aria-hidden="true">${RITMO[r][0]}</span>${RITMO[r][1]}</span>`;
+
+/* ---------------- tela HOJE ---------------- */
+function telaHoje() {
+  const hoje = hojeISO(), envs = calcularEnvelopes(hoje);
+  const porId = Object.fromEntries(envs.map((e) => [e.id, e]));
+  const cardEnv = (e) => {
+    const pct = e.orc > 0 ? Math.max(0, Math.min(1, e.restante / e.orc)) : 0;
+    const grande = e.porDia !== null
+      ? `${brl(e.porDia)}<small> /dia</small>`
+      : `${brl0(e.restante)}<small> ${e.acumula ? "guardado" : "restam"}</small>`;
+    const l3 = e.acumula ? `+ R$ ${e.mensal} todo mês · ${esc(e.obs)}`
+      : (e.porDia !== null ? `resta ${brl(e.restante)} · ` : "") + `renova ${ddmm(e.renovaEm)} (${e.diasRest} ${e.diasRest === 1 ? "dia" : "dias"})`;
+    return `<div class="env">
+      <div class="l1"><span class="nome">${esc(e.nome)}</span>${pill(e.ritmo)}</div>
+      <div class="grande num">${grande}</div>
+      <div class="meter" role="img" aria-label="${Math.round(pct * 100)}% do envelope ainda disponível"><i style="width:${(pct * 100).toFixed(1)}%"></i></div>
+      <div class="l3 num">${l3}</div></div>`;
+  };
+  const porDiaEnvs = envs.filter((e) => e.por_dia), outros = envs.filter((e) => !e.por_dia);
+  const vr = porId.vr, lz = porId.lazer;
+  const dica = vr && lz ? `<div class="dica">Comida fora: <b>VR primeiro</b> (${brl(vr.porDia || 0)}/dia). Se o VR acabar, sai do Lazer (${brl(lz.porDia || 0)}/dia).</div>` : "";
+
+  const pend = pendentes();
+  const envNome = Object.fromEntries(D.envelopes.map((e) => [e.id, e.nome]));
+  const pendHTML = pend.length ? `
+    <h2>Lançados neste celular (${pend.length})</h2>
+    <div class="card lista">${pend.map((p) => `
+      <div class="pend">
+        <div class="d"><div>${esc(p.categoria === "saldo_vr" ? "Saldo do VR informado" : (p.descricao || (CATS.find((c) => c.id === p.categoria) || {}).nome || p.categoria))}</div>
+          <div class="num">${ddmm(p.data)} · ${esc(p.forma)}${p.categoria !== "saldo_vr" && envDaCat(p.categoria, p.forma) ? " · " + esc(envNome[envDaCat(p.categoria, p.forma)]) : ""}${p.enviado ? " · enviado" : ""}</div></div>
+        <span class="v num">${brl(p.valor)}</span>
+        <button class="x" data-remover="${esc(p.id)}" aria-label="Remover">×</button>
+      </div>`).join("")}
+      <div style="padding:12px 16px"><button class="btn" id="b-enviar">Enviar para o Claude</button></div>
+    </div>` : "";
+
+  $("#t-hoje").innerHTML = `
+    <div class="card lista">${porDiaEnvs.map(cardEnv).join("")}${dica}</div>
+    <div style="margin-top:10px"><button class="btn sec" id="b-simular">Simular uma compra</button></div>
+    ${pendHTML}
+    <h2>Outros envelopes</h2>
+    <div class="card lista">${outros.map(cardEnv).join("")}</div>`;
+}
+
+/* ---------------- tela MÊS ---------------- */
+function telaMes() {
+  const meses = D.meses.slice().sort((a, b) => (a.mes < b.mes ? 1 : -1));
+  if (!mesSel || !meses.find((m) => m.mes === mesSel)) mesSel = (meses.find((m) => m.mes <= hojeISO().slice(0, 7)) || meses[0]).mes;
+  const m = meses.find((x) => x.mes === mesSel);
+  const nomes = D.nomes_linhas;
+  const todas = new Set([...Object.keys(m.linhas), ...Object.keys(m.orcamento_agora).filter((k) => m.orcamento_agora[k] > 0)]);
+  const linhas = [...todas].map((k) => ({ k, nome: nomes[k] || k, real: m.linhas[k] || 0, agora: m.orcamento_agora[k], ape: m.orcamento_ape[k] }))
+    .sort((a, b) => b.real - a.real);
+  const linhaHTML = (l) => {
+    const temMeta = typeof l.agora === "number" && l.agora > 0;
+    let barra = "";
+    if (temMeta) {
+      const escala = Math.max(l.agora, l.real);
+      const ok = Math.min(l.real, l.agora) / escala * 100, over = Math.max(0, l.real - l.agora) / escala * 100;
+      barra = `<div class="meter dupla" role="img" aria-label="${Math.round(l.real / l.agora * 100)}% da meta"><i style="width:${ok}%"></i>${over > 0 ? `<i class="over" style="left:${ok}%;width:${over}%"></i>` : ""}</div>`;
+    }
+    const metas = temMeta ? `meta agora ${brl0(l.agora)}${typeof l.ape === "number" ? ` · com o apê ${brl0(l.ape)}` : ""}`
+      : l.k === "comida_fora" ? "meta: pagar com o VR (cartão/Pix = R$ 0)"
+      : (typeof l.agora === "number" ? "meta: R$ 0" : "sem meta");
+    const estouro = temMeta && l.real > l.agora ? `<span style="color:var(--crit-ink)">+${brl0(l.real - l.agora)}</span>` : "";
+    return `<div class="linha"><div class="a"><span>${esc(l.nome)}</span><span class="num">${brl(l.real)}</span></div>${barra}<div class="b num"><span>${metas}</span>${estouro}</div></div>`;
+  };
+  const notas = [];
+  if (m.tem_previstos) notas.push("Inclui contas previstas que ainda não caíram no extrato.");
+  if (m.linhas.cartao_sem_detalhe) notas.push("Tem fatura de cartão sem detalhe: o valor aparece inteiro em “Cartão (fatura sem detalhe)”.");
+  if (m.a_classificar_qtd) notas.push(`${m.a_classificar_qtd} lançamento(s) a classificar (${brl(m.a_classificar_total)}). Resolva no chat.`);
+  notas.push("Cartão conta no mês em que a fatura vence. VR fica fora do caixa.");
+
+  $("#t-mes").innerHTML = `
+    <div class="chips" role="group" aria-label="Mês">${meses.map((x) => `<button class="chip" data-mes="${x.mes}" aria-pressed="${x.mes === mesSel}">${nomeMes(x.mes)}</button>`).join("")}</div>
+    <div class="tiles" style="margin-top:12px">
+      <div class="card tile"><div class="k">Entrou</div><div class="v num">${brl0(m.renda + m.entradas_outras)}</div></div>
+      <div class="card tile"><div class="k">Saiu</div><div class="v num">${brl0(m.gastos)}</div></div>
+      <div class="card tile"><div class="k">${m.sobra >= 0 ? "Sobrou" : "Faltou"}</div><div class="v num ${m.sobra < 0 ? "neg" : ""}">${brl0(m.sobra)}</div></div>
+      <div class="card tile"><div class="k">VR usado</div><div class="v num">${brl0(m.vr_usado)}</div></div>
+    </div>
+    <div class="nota">${notas.map(esc).join("<br>")}</div>
+    <h2>Por categoria</h2>
+    <div class="card lista">${linhas.map(linhaHTML).join("")}</div>
+    <h2>Mês a mês</h2>
+    <div class="card"><table class="num">
+      <thead><tr><th>Mês</th><th>Entrou</th><th>Saiu</th><th>Resultado</th></tr></thead>
+      <tbody>${meses.map((x) => `<tr><td>${nomeMes(x.mes)}</td><td>${brl0(x.renda + x.entradas_outras)}</td><td>${brl0(x.gastos)}</td><td class="${x.sobra < 0 ? "neg" : "pos"}">${brl0(x.sobra)}</td></tr>`).join("")}</tbody>
+    </table></div>`;
+}
+
+/* ---------------- tela TAREFAS ---------------- */
+function telaTarefas() {
+  const H = dn(hojeISO());
+  const secs = (D.tarefas || []).map((s) => {
+    let selo = "";
+    if (s.prazo) {
+      const p = dn(s.prazo);
+      if (p < H) selo = pill("vermelho").replace("apertado", "atrasada");
+      else if (p - H <= 7) selo = pill("amarelo").replace("atenção", "esta semana");
+    }
+    return `<div class="card" style="margin-bottom:12px">
+      <div class="sec-t"><b>${esc(s.titulo)}</b>${selo}</div>
+      <div class="lista">${s.itens.map((t) => `<div class="tarefa"><div>${esc(t.titulo)}</div>${t.detalhe ? `<div class="det">${esc(t.detalhe)}</div>` : ""}</div>`).join("")}</div>
+    </div>`;
+  }).join("");
+  $("#t-tarefas").innerHTML = `${secs || '<p class="nota">Nenhuma tarefa em aberto.</p>'}
+    <p class="nota">Para marcar uma tarefa como feita, avise no chat.</p>`;
+}
+
+/* ---------------- tela RESERVA E APÊ ---------------- */
+function graficoParcelas() {
+  const pf = D.parcelas_futuras, meses = Object.keys(pf).sort();
+  const grupos = ["Nubank", "Bradesco", "Porto"], cor = ["var(--s1)", "var(--s2)", "var(--s3)"];
+  const grupoDe = (k) => grupos.findIndex((g) => k.startsWith(g));
+  const dados = meses.map((m) => { const v = [0, 0, 0]; for (const [k, x] of Object.entries(pf[m])) { const g = grupoDe(k); if (g >= 0) v[g] += x; } return { m, v, t: v[0] + v[1] + v[2] }; });
+  const W = 340, H = 170, L = 40, R = 6, T = 18, B = 22, max = Math.max(...dados.map((d) => d.t)) * 1.1;
+  const passo = (W - L - R) / dados.length, bw = Math.min(26, passo * 0.62), y = (v) => T + (H - T - B) * (1 - v / max);
+  const ticks = [0, 500, 1000, 1500].filter((t) => t <= max);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Parcelas já comprometidas por mês">`;
+  for (const t of ticks) svg += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${t.toLocaleString("pt-BR")}</text>`;
+  dados.forEach((d, i) => {
+    const x = L + passo * i + (passo - bw) / 2; let base = H - B;
+    const segs = d.v.map((v, g) => ({ v, g })).filter((s) => s.v > 0);
+    segs.forEach((s, j) => {
+      const h = (H - T - B) * s.v / max, topo = j === segs.length - 1, gap = j > 0 ? 2 : 0;
+      const y0 = base - h, y1 = base - gap;
+      if (y1 - y0 <= 0.5) { base -= h; return; }
+      const r = topo ? Math.min(4, (y1 - y0), bw / 2) : 0;
+      svg += `<path d="M${x},${y1} V${y0 + r} Q${x},${y0} ${x + r},${y0} H${x + bw - r} Q${x + bw},${y0} ${x + bw},${y0 + r} V${y1} Z" fill="${cor[s.g]}"/>`;
+      base -= h;
+    });
+    svg += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle">${nomeMes(d.m, false)}</text>`;
+    if (i === 0 || i === dados.length - 1) svg += `<text class="tot" x="${x + bw / 2}" y="${y(d.t) - 5}" text-anchor="middle">${Math.round(d.t)}</text>`;
+    svg += `<rect data-i="${i}" x="${L + passo * i}" y="${T}" width="${passo}" height="${H - T - B}" fill="transparent"/>`;
+  });
+  svg += "</svg>";
+  const tabela = `<table class="num hidden" id="tab-parcelas"><thead><tr><th>Mês</th>${grupos.map((g) => `<th>${g}</th>`).join("")}<th>Total</th></tr></thead>
+    <tbody>${dados.map((d) => `<tr><td>${nomeMes(d.m)}</td>${d.v.map((v) => `<td>${v ? brl0(v) : "—"}</td>`).join("")}<td><b>${brl0(d.t)}</b></td></tr>`).join("")}</tbody></table>`;
+  return { html: `<div class="legenda">${grupos.map((g, i) => `<span><i style="background:${cor[i]}"></i>${g}</span>`).join("")}</div>
+    <div class="grafico" id="g-parcelas">${svg}<div class="tip hidden" id="tip"></div></div>${tabela}
+    <div style="padding:0 16px 12px"><button class="btn link" id="b-tab-parcelas">Ver como tabela</button></div>`, dados, grupos, cor, W, L, passo };
+}
+
+function telaMais() {
+  const r = D.reserva, a = D.ape || {};
+  const total = r.contas.reduce((s, c) => s + c.saldo, 0), pct = Math.min(1, total / r.meta);
+  const g = graficoParcelas();
+  const somaApe = (a.moradia_ape || []).reduce((s, x) => s + x.valor, 0), somaHoje = (a.moradia_hoje || []).reduce((s, x) => s + x.valor, 0);
+  const custos = (a.custos_entrada || []).reduce((s, x) => s + x.valor, 0);
+  $("#t-mais").innerHTML = `
+    <h2>Reserva</h2>
+    <div class="card">
+      <div class="env">
+        <div class="l1"><span class="nome">Guardado</span><span class="sub num" style="color:var(--text-3);font-size:13px">em ${ddmm(r.atualizado)}</span></div>
+        <div class="grande num">${brl0(total)}<small> de ${brl0(r.meta)}</small></div>
+        <div class="meter" role="img" aria-label="${Math.round(pct * 100)}% da meta"><i style="width:${pct * 100}%"></i></div>
+      </div>
+      <div class="lista" style="border-top:1px solid var(--line)">${r.contas.map((c) => `<div class="kv"><span>${esc(c.nome)}</span><span class="num">${brl(c.saldo)}</span></div>`).join("")}
+        <div class="kv"><span>FGTS (não é reserva)</span><span class="num">${brl0(r.fgts)}</span></div></div>
+    </div>
+
+    <h2>Parcelas que já vão vencer</h2>
+    <div class="card">${g.html}</div>
+    <p class="nota">Parcelas de compras antigas, por mês de vencimento da fatura. Nenhuma parcela nova: a barra só pode descer.</p>
+
+    <h2>Apartamento</h2>
+    <div class="card lista">
+      <div class="dica">${esc(a.status || "")}</div>
+      <div class="kv"><span>Moradia hoje</span><span class="num">${brl0(somaHoje)}/mês</span></div>
+      ${(a.moradia_ape || []).map((x) => `<div class="kv"><span>${esc(x.item)}</span><span class="num">${brl0(x.valor)}</span></div>`).join("")}
+      <div class="kv total"><span>Moradia com o apê</span><span class="num">${brl0(somaApe)}/mês <span class="obs">+${brl0(somaApe - somaHoje)} por mês</span></span></div>
+      ${(a.parcela_futura || []).map((x) => `<div class="kv"><span>Parcela ${esc(x.quando)}</span><span class="num">${brl0(x.valor)}</span></div>`).join("")}
+    </div>
+    <h2>Para assinar e mudar</h2>
+    <div class="card lista">
+      ${(a.custos_entrada || []).map((x) => `<div class="kv"><span>${esc(x.item)}<span class="obs">${esc(x.obs || "")}</span></span><span class="num">${x.valor ? brl0(x.valor) : "—"}</span></div>`).join("")}
+      <div class="kv total"><span>Total do bolso</span><span class="num">${brl0(custos)}</span></div>
+      <div class="kv"><span>Separado para a compra</span><span class="num">${brl0(a.caixa_da_compra || 0)}</span></div>
+      <div class="kv"><span>Entrada (FGTS)</span><span class="num">${brl0(a.fgts_entrada || 0)}</span></div>
+    </div>
+    <h2>A confirmar</h2>
+    <div class="card lista">${(a.confirmar || []).map((t) => `<div class="tarefa">${esc(t)}</div>`).join("")}</div>`;
+
+  // tooltip do gráfico (toque/hover)
+  const box = $("#g-parcelas"), tip = $("#tip");
+  const mostra = (ev) => {
+    const alvo = ev.target.closest("rect[data-i]"); if (!alvo) { tip.classList.add("hidden"); return; }
+    const d = g.dados[+alvo.dataset.i], bb = box.getBoundingClientRect(), esc_ = bb.width / g.W;
+    tip.innerHTML = `<b>${nomeMes(d.m)} · ${brl0(d.t)}</b><br>` + d.v.map((v, i) => v ? `<i style="background:${g.cor[i]}"></i>${g.grupos[i]} ${brl0(v)}` : "").filter(Boolean).join("<br>");
+    const cx = (g.L + g.passo * (+alvo.dataset.i + 0.5)) * esc_;
+    tip.style.left = Math.max(70, Math.min(bb.width - 70, cx)) + "px"; tip.style.top = "14px";
+    tip.classList.remove("hidden");
+  };
+  box.addEventListener("pointermove", mostra); box.addEventListener("pointerdown", mostra);
+  box.addEventListener("pointerleave", () => tip.classList.add("hidden"));
+  $("#b-tab-parcelas").addEventListener("click", (e) => {
+    const t = $("#tab-parcelas"), escondida = t.classList.toggle("hidden");
+    box.classList.toggle("hidden", !escondida); e.target.textContent = escondida ? "Ver como tabela" : "Ver como gráfico";
+  });
+}
+
+/* ---------------- navegação ---------------- */
+const TITULOS = { hoje: "Hoje", mes: "Mês", tarefas: "Tarefas", mais: "Reserva e apê" };
+function irPara(aba) {
+  for (const t of ["hoje", "mes", "tarefas", "mais"]) $("#t-" + t).classList.toggle("hidden", t !== aba);
+  document.querySelectorAll("nav.abas button").forEach((b) => b.setAttribute("aria-current", b.dataset.aba === aba ? "page" : "false"));
+  $("#titulo").textContent = TITULOS[aba];
+  $("#b-mais").classList.toggle("hidden", aba !== "hoje");
+  ls.set(K.aba, aba); window.scrollTo(0, 0);
+}
+function renderTudo() {
+  limparSincronizados();
+  const h = hojeISO(), d = new Date();
+  $("#subtitulo").textContent = `${DIAS_SEM[d.getDay()]}, ${ddmm(h)}`;
+  telaHoje(); telaMes(); telaTarefas(); telaMais();
+  $("#rodape").innerHTML = `<span class="num">Dados atualizados em ${ddmm(D.gerado_em)}/${D.gerado_em.slice(0, 4)}</span>
+    <button class="btn link" id="b-sair">Sair e esquecer a senha neste aparelho</button>`;
+}
+
+/* ---------------- folhas ---------------- */
+let folhaAberta = null;
+function abrir(id) { folhaAberta = $(id); $("#veu").classList.remove("hidden"); folhaAberta.classList.remove("hidden"); }
+function fechar() { if (folhaAberta) folhaAberta.classList.add("hidden"); $("#veu").classList.add("hidden"); folhaAberta = null; }
+
+const L_ = { tipo: "gasto", cat: null, forma: null };
+function chips(el, itens, sel, onPick) {
+  el.innerHTML = itens.map((x) => `<button type="button" class="chip" data-id="${esc(x.id)}" aria-pressed="${x.id === sel}">${esc(x.nome)}</button>`).join("");
+  el.onclick = (e) => { const b = e.target.closest("[data-id]"); if (b) onPick(b.dataset.id); };
+}
+function renderLancar() {
+  const saldo = L_.tipo === "saldo";
+  document.querySelectorAll("#f-lancar .seg button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.tipo === L_.tipo));
+  $("#h-lancar").textContent = saldo ? "Saldo que aparece no app do VR" : "Novo gasto";
+  $("#l-bloco-gasto").style.display = saldo ? "none" : "grid";
+  chips($("#l-cats"), CATS, L_.cat, (id) => { L_.cat = id; if (id === "comida_fora" && !L_.forma) L_.forma = "VR"; renderLancar(); });
+  chips($("#l-formas"), FORMAS, L_.forma, (id) => { L_.forma = id; renderLancar(); });
+  previaLancar();
+}
+function previaLancar() {
+  const v = parseValor($("#l-valor").value), data = $("#l-data").value || hojeISO(), prev = $("#l-prev");
+  if (L_.tipo === "saldo") {
+    prev.innerHTML = isFinite(v) && v >= 0 ? (() => { const e = calcularEnvelopes(hojeISO(), { data, valor: v, envelope: "vr", saldo_vr: true }).find((x) => x.id === "vr"); return `VR fica em <b>${brl(e.porDia)}/dia</b> até ${ddmm(e.renovaEm)}.`; })() : "Digite o saldo do app do VR.";
+    $("#l-salvar").disabled = !(isFinite(v) && v >= 0); return;
+  }
+  const env = L_.cat ? envDaCat(L_.cat, L_.forma) : null;
+  $("#l-salvar").disabled = !(isFinite(v) && v > 0 && L_.cat && L_.forma);
+  if (!env || !isFinite(v) || v <= 0) { prev.textContent = !L_.cat ? "Escolha a categoria." : !L_.forma ? "Escolha como pagou." : env ? "Digite o valor." : "Não entra em nenhum envelope."; return; }
+  const antes = calcularEnvelopes(hojeISO()).find((x) => x.id === env), depois = calcularEnvelopes(hojeISO(), { data, valor: v, envelope: env }).find((x) => x.id === env);
+  prev.innerHTML = antes.porDia !== null
+    ? `${esc(antes.nome)}: ${brl(antes.porDia)}/dia → <b>${brl(depois.porDia)}/dia</b>${depois.restante < 0 ? " (estoura o envelope)" : ""}`
+    : `${esc(antes.nome)}: restam ${brl0(antes.restante)} → <b>${brl0(depois.restante)}</b>`;
+}
+function salvarLancamento() {
+  const v = parseValor($("#l-valor").value); if (!isFinite(v)) return;
+  const p = pendentes(), saldo = L_.tipo === "saldo";
+  const desc = saldo ? "Saldo do app do VR" : ($("#l-desc").value.trim() || (CATS.find((c) => c.id === L_.cat) || {}).nome);
+  p.push({ id: "cel-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), data: $("#l-data").value || hojeISO(),
+           descricao: desc.replace(/[;\n]/g, ","), valor: Math.round(v * 100) / 100,
+           forma: saldo ? "VR" : L_.forma, categoria: saldo ? "saldo_vr" : L_.cat, enviado: false });
+  salvarPendentes(p); fechar(); telaHoje();
+}
+function textoEnvio() {
+  return pendentes().map((p) => [p.data, p.descricao, p.valor.toFixed(2), p.forma, p.categoria, p.id].join(";")).join("\n");
+}
+function marcarEnviados() { salvarPendentes(pendentes().map((p) => ({ ...p, enviado: true }))); telaHoje(); }
+
+/* ---------------- simulador ---------------- */
+let simEnv = "vr";
+function renderSimular() {
+  const envs = D.envelopes.filter((e) => e.por_dia || e.id === "mercado");
+  chips($("#s-envs"), envs.map((e) => ({ id: e.id, nome: e.nome })), simEnv, (id) => { simEnv = id; renderSimular(); });
+  const v = parseValor($("#s-valor").value), out = $("#s-prev");
+  if (!isFinite(v) || v <= 0) { out.textContent = "Digite um valor."; return; }
+  const h = hojeISO(), a = calcularEnvelopes(h).find((x) => x.id === simEnv), d = calcularEnvelopes(h, { data: h, valor: v, envelope: simEnv }).find((x) => x.id === simEnv);
+  out.innerHTML = a.porDia !== null
+    ? `${esc(a.nome)} hoje: ${brl(a.porDia)}/dia<br>Depois de ${brl(v)}: <b>${brl(d.porDia)}/dia</b> até ${ddmm(d.renovaEm)}${d.restante < 0 ? "<br><b>Estoura o envelope</b> em " + brl(-d.restante) : ""}`
+    : `${esc(a.nome)}: restam ${brl0(a.restante)} → <b>${brl0(d.restante)}</b>`;
+}
+
+/* ---------------- abrir / carregar ---------------- */
+async function buscarBlob() {
+  try {
+    const r = await fetch("dados.enc?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const txt = await r.text(); ls.set(K.enc, txt); return JSON.parse(txt);
+  } catch (e) {
+    const off = ls.get(K.enc); if (off) return JSON.parse(off);   // sem internet: última versão baixada
+    throw e;
+  }
+}
+async function iniciar() {
+  let blob;
+  try { blob = await buscarBlob(); } catch { $("#erro-trava").textContent = "Não consegui baixar os dados. Confira a internet."; return; }
+  const salva = (() => { try { return JSON.parse(ls.get(K.chave) || "null"); } catch { return null; } })();
+  if (salva && salva.sal === blob.sal) {
+    try {
+      const chave = await crypto.subtle.importKey("raw", b64d(salva.raw), "AES-GCM", false, ["decrypt"]);
+      D = await decifrar(blob, chave); return mostrarApp();
+    } catch { ls.del(K.chave); }
+  }
+  $("#f-trava").onsubmit = async (e) => {
+    e.preventDefault(); const b = $("#b-abrir"); b.disabled = true; b.textContent = "Abrindo…"; $("#erro-trava").textContent = "";
+    try {
+      const chave = await chaveDaSenha($("#senha").value, blob);
+      D = await decifrar(blob, chave);
+      if ($("#lembrar").checked) ls.set(K.chave, JSON.stringify({ sal: blob.sal, raw: b64e(await crypto.subtle.exportKey("raw", chave)) }));
+      $("#senha").value = ""; mostrarApp();
+    } catch { $("#erro-trava").textContent = "Senha errada."; }
+    b.disabled = false; b.textContent = "Abrir";
+  };
+  $("#senha").focus();
+}
+function mostrarApp() {
+  $("#trava").classList.add("hidden"); $("#app").classList.remove("hidden");
+  renderTudo(); irPara(ls.get(K.aba) || "hoje");
+}
+
+/* ---------------- eventos ---------------- */
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  const aba = t.closest("nav.abas button"); if (aba) return irPara(aba.dataset.aba);
+  if (t.closest("[data-fecha]") || t.id === "veu") return fechar();
+  if (t.closest("#b-mais")) {
+    L_.tipo = "gasto"; L_.cat = null; L_.forma = null; $("#l-valor").value = ""; $("#l-desc").value = ""; $("#l-data").value = hojeISO();
+    renderLancar(); abrir("#f-lancar"); $("#l-valor").focus(); return;
+  }
+  const seg = t.closest("#f-lancar .seg button"); if (seg) { L_.tipo = seg.dataset.tipo; renderLancar(); return; }
+  if (t.closest("#l-salvar")) return salvarLancamento();
+  if (t.closest("#b-simular")) { $("#s-valor").value = ""; renderSimular(); abrir("#f-simular"); $("#s-valor").focus(); return; }
+  if (t.closest("#b-enviar")) { $("#e-texto").value = textoEnvio(); abrir("#f-enviar"); return; }
+  if (t.closest("#e-copiar")) {
+    const txt = $("#e-texto").value;
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { t.textContent = "Copiado ✓"; marcarEnviados(); },
+      () => { $("#e-texto").select(); document.execCommand && document.execCommand("copy"); t.textContent = "Copiado ✓"; marcarEnviados(); });
+    return;
+  }
+  if (t.closest("#e-compartilhar")) {
+    const txt = $("#e-texto").value;
+    if (navigator.share) navigator.share({ text: txt }).then(marcarEnviados, () => {}); else $("#e-copiar").click();
+    return;
+  }
+  const rm = t.closest("[data-remover]"); if (rm) { salvarPendentes(pendentes().filter((p) => p.id !== rm.dataset.remover)); telaHoje(); return; }
+  const mes = t.closest("[data-mes]"); if (mes) { mesSel = mes.dataset.mes; telaMes(); return; }
+  if (t.closest("#b-sair")) { ls.del(K.chave); ls.del(K.enc); location.reload(); }
+});
+$("#l-valor").addEventListener("input", previaLancar);
+$("#l-data").addEventListener("change", previaLancar);
+$("#s-valor").addEventListener("input", renderSimular);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") fechar(); });
+// virou o dia com a página aberta (ou voltou para ela): recalcula o "por dia"
+document.addEventListener("visibilitychange", () => { if (!document.hidden && D) renderTudo(); });
+
+iniciar();
+</script>
+</body>
+</html>
