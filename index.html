@@ -148,7 +148,7 @@ th, td { text-align: right; padding: 9px 12px; }
 th:first-child, td:first-child { text-align: left; }
 th { font-size: 12px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
 tbody tr + tr td { border-top: 1px solid var(--line); }
-td.neg { color: var(--crit-ink); font-weight: 600; } td.pos { font-weight: 600; }
+td.neg, .kv .neg, .grande.neg { color: var(--crit-ink); font-weight: 600; } td.pos { font-weight: 600; }
 
 /* ---------- tarefas ---------- */
 .sec-t { padding: 12px 16px 4px; display: flex; gap: 8px; align-items: center; justify-content: space-between; }
@@ -467,6 +467,37 @@ function telaHoje() {
 }
 
 /* ---------------- tela MÊS ---------------- */
+/* meta de guardar do mês (plano: renda média − orçamento − parcelas antigas) */
+function blocoMeta(m) {
+  const P = D.plano_guardar; if (!P) return "";
+  const p = P.meses.find((x) => x.mes === m.mes);
+  const atual = m.mes === hojeISO().slice(0, 7);
+  if (!p) {
+    if (!atual || !P.meses.length) return "";
+    const prox = P.meses[0];
+    return `<h2>Meta de guardar</h2><div class="card lista">
+      <div class="kv"><span>${esc(nomeMes(m.mes))}</span><span class="num">mês de ajuste, sem meta</span></div>
+      <div class="kv"><span>Previsão do mês</span><span class="num ${m.sobra < 0 ? "neg" : "pos"}">${brl0(m.sobra)}</span></div>
+      <div class="kv total"><span>Meta a partir de ${esc(nomeMes(prox.mes))}</span><span class="num">${brl0(prox.meta_agora)}</span></div></div>`;
+  }
+  const meta = p.meta_agora, prev = m.sobra, pct = meta > 0 ? Math.max(0, Math.min(1, prev / meta)) : 0;
+  const dif = prev - meta;
+  return `<h2>Meta de guardar</h2><div class="card">
+    <div class="env">
+      <div class="l1"><span class="nome">${atual ? "Previsão de sobra" : "Sobrou"}</span><span class="sub num" style="color:var(--text-3);font-size:13px">meta ${brl0(meta)}</span></div>
+      <div class="grande num ${prev < 0 ? "neg" : ""}">${brl0(prev)}<small> ${dif >= 0 ? "bateu a meta" : `faltam ${brl0(-dif)}`}</small></div>
+      <div class="meter" role="img" aria-label="${Math.round(pct * 100)}% da meta"><i style="width:${pct * 100}%"></i></div>
+    </div>
+    <div class="lista" style="border-top:1px solid var(--line)">
+      <div class="kv"><span>Renda média</span><span class="num">${brl0(P.renda)}</span></div>
+      <div class="kv"><span>Orçamento do mês</span><span class="num">−${brl0(P.orc_agora)}</span></div>
+      <div class="kv"><span>Parcelas antigas</span><span class="num">−${brl0(p.parcelas)}</span></div>
+      ${p.extras ? `<div class="kv"><span>Extras do mês</span><span class="num">−${brl0(p.extras)}</span></div>` : ""}
+      ${p.meta_ape != null ? `<div class="kv"><span>Meta se já estiver no apê</span><span class="num">${brl0(p.meta_ape)}</span></div>` : ""}
+    </div></div>
+    <p class="nota">O que sobrar nos envelopes no fim do ciclo também vai para a reserva, por cima da meta.</p>`;
+}
+
 function telaMes() {
   const meses = D.meses.slice().sort((a, b) => (a.mes < b.mes ? 1 : -1));
   if (!mesSel || !meses.find((m) => m.mes === mesSel)) mesSel = (meses.find((m) => m.mes <= hojeISO().slice(0, 7)) || meses[0]).mes;
@@ -503,6 +534,7 @@ function telaMes() {
       <div class="card tile"><div class="k">${m.sobra >= 0 ? "Sobrou" : "Faltou"}</div><div class="v num ${m.sobra < 0 ? "neg" : ""}">${brl0(m.sobra)}</div></div>
       <div class="card tile"><div class="k">VR usado</div><div class="v num">${brl0(m.vr_usado)}</div></div>
     </div>
+    ${blocoMeta(m)}
     <div class="nota">${notas.map(esc).join("<br>")}</div>
     <h2>Por categoria</h2>
     <div class="card lista">${linhas.map(linhaHTML).join("")}</div>
@@ -566,10 +598,66 @@ function graficoParcelas() {
     <div style="padding:0 16px 12px"><button class="btn link" id="b-tab-parcelas">Ver como tabela</button></div>`, dados, grupos, cor, W, L, passo };
 }
 
+function graficoReserva(total) {
+  const P = D.plano_guardar; if (!P) return null;
+  const meta = D.reserva.meta;
+  let a = total, b = total;
+  const pts = [{ m: "hoje", a, b }];
+  for (const p of P.meses) { a += p.meta_agora; b += p.meta_ape ?? p.meta_agora; pts.push({ m: p.mes, a, b }); }
+  const W = 340, H = 180, L = 40, R = 46, T = 14, B = 22;
+  const max = Math.max(meta, ...pts.map((p) => p.a)) * 1.06, min = Math.min(total, meta) * 0.85;
+  const x = (i) => L + (W - L - R) * i / (pts.length - 1), y = (v) => T + (H - T - B) * (1 - (v - min) / (max - min));
+  const passo = 5000, ticks = [];
+  for (let t = Math.ceil(min / passo) * passo; t <= max; t += passo) ticks.push(t);
+  const caminho = (k) => pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`).join("");
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Reserva prevista mês a mês, seguindo a meta de guardar">`;
+  for (const t of ticks) svg += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${t / 1000} mil</text>`;
+  svg += `<line x1="${L}" x2="${W - R}" y1="${y(meta)}" y2="${y(meta)}" stroke="var(--text-3)" stroke-width="1" stroke-dasharray="4 3"/><text x="${L + 2}" y="${y(meta) - 4}">meta ${meta / 1000} mil</text>`;
+  pts.forEach((p, i) => { if (i % 3 === 0) svg += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${p.m === "hoje" ? "hoje" : nomeMes(p.m, false)}</text>`; });
+  svg += `<path d="${caminho("b")}" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round"/>`;
+  svg += `<path d="${caminho("a")}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round"/>`;
+  const fim = pts.length - 1;
+  svg += `<text class="tot" x="${x(fim) + 4}" y="${y(pts[fim].a) + 4}">${Math.round(pts[fim].a / 1000)} mil</text>`;
+  svg += `<text class="tot" x="${x(fim) + 4}" y="${y(pts[fim].b) + 4}">${Math.round(pts[fim].b / 1000)} mil</text>`;
+  svg += `<line id="rx" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="var(--text-3)" stroke-width="1" visibility="hidden"/>`;
+  svg += `<circle id="ra" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/><circle id="rb" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`;
+  svg += `<rect id="rhit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent"/></svg>`;
+  const chega = pts.find((p) => p.a >= meta);
+  const nomes = ["Continuando no aluguel", `Com o apê a partir de ${nomeMes(P.inicio_ape)}`], cor = ["var(--s1)", "var(--s2)"];
+  const tabela = `<table class="num hidden" id="tab-reserva"><thead><tr><th>Mês</th><th>Guardar</th><th>Aluguel</th><th>Com o apê</th></tr></thead>
+    <tbody>${P.meses.map((p, i) => `<tr><td>${nomeMes(p.mes)}</td><td>${brl0(p.meta_agora)}${p.meta_ape != null ? ` / ${brl0(p.meta_ape)}` : ""}</td><td>${brl0(pts[i + 1].a)}</td><td>${brl0(pts[i + 1].b)}</td></tr>`).join("")}</tbody></table>`;
+  const html = `<div class="legenda">${nomes.map((n, i) => `<span><i style="background:${cor[i]}"></i>${esc(n)}</span>`).join("")}</div>
+    <div class="grafico" id="g-reserva">${svg}<div class="tip hidden" id="tip-r"></div></div>${tabela}
+    <div style="padding:0 16px 12px"><button class="btn link" id="b-tab-reserva">Ver como tabela</button></div>`;
+  const ligar = () => {
+    const box = $("#g-reserva"), tip = $("#tip-r"), sv = box.querySelector("svg");
+    const esconde = () => { tip.classList.add("hidden"); for (const id of ["rx", "ra", "rb"]) sv.querySelector("#" + id).setAttribute("visibility", "hidden"); };
+    const mostra = (ev) => {
+      const bb = sv.getBoundingClientRect(), esc_ = bb.width / W, px = (ev.clientX - bb.left) / esc_;
+      if (px < L - 8 || px > W - R + 8) { esconde(); return; }
+      const i = Math.max(0, Math.min(fim, Math.round((px - L) / ((W - L - R) / fim)))), p = pts[i];
+      const rx = sv.querySelector("#rx"), ra = sv.querySelector("#ra"), rb = sv.querySelector("#rb");
+      rx.setAttribute("x1", x(i)); rx.setAttribute("x2", x(i));
+      ra.setAttribute("cx", x(i)); ra.setAttribute("cy", y(p.a)); rb.setAttribute("cx", x(i)); rb.setAttribute("cy", y(p.b));
+      for (const el of [rx, ra, rb]) el.setAttribute("visibility", "visible");
+      tip.innerHTML = `<b>${p.m === "hoje" ? "Hoje" : esc(nomeMes(p.m))}</b><br><i style="background:${cor[0]}"></i>Aluguel ${brl0(p.a)}<br><i style="background:${cor[1]}"></i>Com o apê ${brl0(p.b)}`;
+      tip.style.left = Math.max(80, Math.min(bb.width - 80, x(i) * esc_)) + "px"; tip.style.top = "14px";
+      tip.classList.remove("hidden");
+    };
+    box.addEventListener("pointermove", mostra); box.addEventListener("pointerdown", mostra); box.addEventListener("pointerleave", esconde);
+    $("#b-tab-reserva").addEventListener("click", (e) => {
+      const t = $("#tab-reserva"), escondida = t.classList.toggle("hidden");
+      box.classList.toggle("hidden", !escondida); e.target.textContent = escondida ? "Ver como tabela" : "Ver como gráfico";
+    });
+  };
+  return { html, ligar, chega };
+}
+
 function telaMais() {
   const r = D.reserva, a = D.ape || {};
   const total = r.contas.reduce((s, c) => s + c.saldo, 0), pct = Math.min(1, total / r.meta);
   const g = graficoParcelas();
+  const gr = graficoReserva(total);
   const somaApe = (a.moradia_ape || []).reduce((s, x) => s + x.valor, 0), somaHoje = (a.moradia_hoje || []).reduce((s, x) => s + x.valor, 0);
   const custos = (a.custos_entrada || []).reduce((s, x) => s + x.valor, 0);
   $("#t-mais").innerHTML = `
@@ -583,6 +671,10 @@ function telaMais() {
       <div class="lista" style="border-top:1px solid var(--line)">${r.contas.map((c) => `<div class="kv"><span>${esc(c.nome)}</span><span class="num">${brl(c.saldo)}</span></div>`).join("")}
         <div class="kv"><span>FGTS (não é reserva)</span><span class="num">${brl0(r.fgts)}</span></div></div>
     </div>
+
+    ${gr ? `<h2>Reserva prevista</h2>
+    <div class="card">${gr.html}</div>
+    <p class="nota">Somando a meta de guardar de cada mês, sem contar as sobras dos envelopes.${gr.chega ? ` Continuando no aluguel, passa da meta de ${brl0(D.reserva.meta)} em ${esc(gr.chega.m === "hoje" ? "hoje" : nomeMes(gr.chega.m))}.` : ""} IPVA 2027 ainda fora da conta.</p>` : ""}
 
     <h2>Parcelas que já vão vencer</h2>
     <div class="card">${g.html}</div>
@@ -606,6 +698,7 @@ function telaMais() {
     <h2>A confirmar</h2>
     <div class="card lista">${(a.confirmar || []).map((t) => `<div class="tarefa">${esc(t)}</div>`).join("")}</div>`;
 
+  if (gr) gr.ligar();
   // tooltip do gráfico (toque/hover)
   const box = $("#g-parcelas"), tip = $("#tip");
   const mostra = (ev) => {
