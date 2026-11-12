@@ -131,8 +131,8 @@ const DOORS = [
 const SLIDING = {gap:[60,-14,121,16]};
 const WINDOWS = [[464,-172,118,14],[507,259,14,120],[273,-172,58,14]];
 const FIXED = [
-  {id:'pia', label:'Pia (da obra)', rect:[-172,79,60,121]},
-  {id:'tanque', label:'Tanque', rect:[-142,-152,45,55]},
+  {id:'pia', label:'Pia (da obra)', rect:[-172,79,60,121], h:90},
+  {id:'tanque', label:'Tanque', rect:[-142,-152,45,55], h:85},
 ];
 // áreas de passagem que precisam ficar livres (mín. ~50–60 cm)
 const PASSAGES = [
@@ -168,8 +168,12 @@ const CATALOG = [
   {id:'mesatrab', label:'Mesa de trabalho', short:'Mesa trab.', w:120, d:60, clear:80, cat:'table', est:'120×60 (+80 para a cadeira)'},
   {id:'cadtrab', label:'Cadeira de trabalho', short:'Cad.', w:60, d:60, clear:0, cat:'seat', kind:'chair', est:'60×60'},
   {id:'guardaroupa', label:'Guarda-roupa do casal (FUTURO)', short:'Guarda-roupa (futuro)', w:220, d:55, clear:60, cat:'future', est:'220×55, portas de correr (a comprar)'},
-  {id:'tvsu', label:'TV extra (na parede ou sobre um móvel)', short:'TV extra', w:112, d:8, clear:0, cat:'tv', nocollide:true, est:'~112 de largura (TV de 50")'},
+  {id:'tvsu', label:'TV extra (na parede ou sobre um móvel)', short:'TV extra', w:112, d:8, clear:0, cat:'tv', apoio:'parede', z:100, est:'~112 de largura × 65 de altura (TV de 50"), na parede a 1,00 m'},
 ];
+// altura de cada móvel (cm, ESTIMATIVA); editável no item
+const HDEF = {queen:50, solteiro:45, arara:160, armario2p:180, comoda:85, armp1:85, armp2:85, estcoz:180, geladeira:170, fogao:85,
+  mesared:75, cad1:90, cad2:90, cad3:90, sofa:85, rack:50, estliv:180, discos:80, mesatrab:75, cadtrab:100, guardaroupa:220, tvsu:65};
+CATALOG.forEach(c => { c.h = HDEF[c.id] || 80; });
 const CAT = Object.fromEntries(CATALOG.map(c => [c.id, c]));
 // posições: [x, y, r] = canto de cima/esquerda da pegada e rotação (0 = frente para baixo, 90 = frente para a esquerda, 180 = frente para cima, 270 = frente para a direita)
 const COMMON = {
@@ -261,49 +265,125 @@ function chairPair(a, b){ // cadeira pode entrar embaixo de mesa
 function placedIds(layout){ return Object.keys(layout).filter(id => CAT[id] && layout[id].in); }
 function roomOf(px,py){ for (const r of ROOMS) for (const q of r.rects) if (px>=q[0]&&px<=q[0]+q[2]&&py>=q[1]&&py<=q[1]+q[3]) return r.name; return null; }
 
+// ---------- apoio (chão / parede / em cima de outro móvel) e faixa de altura ----------
+const APOIOS = {chao:'No chão', parede:'Na parede', sobre:'Em cima de outro móvel'};
+const DOOR_TOP = 210;   // acima disso, o móvel não atrapalha o giro das portas
+const HEAD_CLEAR = 190; // abaixo disso, um móvel de parede atrapalha a passagem (cabeça)
+function catDefaults(id, v){
+  const c = CAT[id];
+  if (c && !c.custom) return {h:c.h, apoio:c.apoio || 'chao', z:c.z || 0};
+  const cc = CUSTOM_CATS[(v && v.tipo) || 'outro'] || CUSTOM_CATS.outro;
+  return {h:cc.h, apoio:cc.apoio || 'chao', z:cc.z || 0};
+}
+function baseOk(layout, id){ // base válida, colocada e sem ciclo
+  const v = layout[id]; if (!v || v.apoio !== 'sobre') return false;
+  let b = v.base, n = 0;
+  while (b && n < 8){ if (b === id || !layout[b] || !layout[b].in || !CAT[b]) return false; if (layout[b].apoio !== 'sobre') return true; b = layout[b].base; n++; }
+  return false;
+}
+function itemBand(layout, id, depth){
+  const v = layout[id]; depth = depth || 0;
+  const h = v.h > 0 ? v.h : catDefaults(id, v).h;
+  if (v.apoio === 'parede') return [v.z || 0, (v.z || 0) + h];
+  if (v.apoio === 'sobre' && depth < 8 && baseOk(layout, id)){ const b = itemBand(layout, v.base, depth+1); return [b[1], b[1] + h]; }
+  return [0, h];
+}
+function bandsHit(a, b){ return a[0] < b[1] - EPS && b[0] < a[1] - EPS; }
+function onBase(layout, a, b){ const va = layout[a], vb = layout[b]; return (va.apoio === 'sobre' && va.base === b) || (vb.apoio === 'sobre' && vb.base === a); }
+// descendentes (tudo que está em cima, direta ou indiretamente)
+function childrenOf(layout, id){ return Object.keys(layout).filter(k => layout[k].apoio === 'sobre' && layout[k].base === id); }
+function descendants(layout, id, acc){ acc = acc || []; for (const k of childrenOf(layout, id)) if (!acc.includes(k) && k !== id){ acc.push(k); descendants(layout, k, acc); } return acc; }
+function rot90(x, y, r){ let a = x, b = y; for (let i = 0; i < (((r % 360) + 360) % 360) / 90; i++){ const t = a; a = -b; b = t; } return [a, b]; }
+function center(it){ const f = fp(it); return [f[0] + f[2]/2, f[1] + f[3]/2]; }
+// guarda a posição do item relativa à base (no referencial da base sem giro)
+function setRel(layout, id){
+  const v = layout[id]; if (!v || v.apoio !== 'sobre' || !layout[v.base]) return;
+  const b = layout[v.base], bc = center(b), cc = center(v);
+  const [ox, oy] = rot90(cc[0] - bc[0], cc[1] - bc[1], (360 - b.r) % 360);
+  v.rel = {ox: Math.round(ox), oy: Math.round(oy), dr: ((v.r - b.r) % 360 + 360) % 360};
+}
+// reposiciona tudo o que está em cima de "id" (depois de mover/girar a base)
+function syncChildren(layout, id, depth){
+  depth = depth || 0; if (depth > 8) return;
+  const b = layout[id]; if (!b) return;
+  const bc = center(b);
+  for (const k of childrenOf(layout, id)){
+    const v = layout[k]; if (k === id) continue;
+    const rel = v.rel || {ox:0, oy:0, dr:0};
+    const [ox, oy] = rot90(rel.ox, rel.oy, b.r);
+    v.r = (b.r + rel.dr) % 360;
+    const f = fp(v);
+    v.x = Math.round(bc[0] + ox - f[2]/2); v.y = Math.round(bc[1] + oy - f[3]/2);
+    syncChildren(layout, k, depth + 1);
+  }
+}
+function syncAll(layout){ for (const id of Object.keys(layout)) if (layout[id].apoio !== 'sobre') syncChildren(layout, id); }
+// encostado numa parede (≤ 5 cm) em algum lado?
+function nearWall(rect, tol){
+  tol = tol || 5;
+  const sides = [
+    {pts: samples(rect[1], rect[3]).map(y => [rect[0], y]), dx:-1, dy:0},
+    {pts: samples(rect[1], rect[3]).map(y => [rect[0]+rect[2], y]), dx:1, dy:0},
+    {pts: samples(rect[0], rect[2]).map(x => [x, rect[1]]), dx:0, dy:-1},
+    {pts: samples(rect[0], rect[2]).map(x => [x, rect[1]+rect[3]]), dx:0, dy:1},
+  ];
+  return sides.some(s => s.pts.every(([x, y]) => { for (let t = 1; t <= tol + 1; t++) if (!inFloor(x + s.dx*t, y + s.dy*t)) return true; return false; }));
+}
+
 function analyze(layout){
   const ids = placedIds(layout);
   const items = {}; let red = 0, amber = 0;
-  const sh = {}; ids.forEach(id => sh[id] = shapeOf(Object.assign({id}, layout[id])));
+  const sh = {}, band = {};
+  ids.forEach(id => { sh[id] = shapeOf(Object.assign({id}, layout[id])); band[id] = itemBand(layout, id); });
   for (const id of ids){
-    const c = CAT[id], it = Object.assign({id}, layout[id]), s = sh[id], iss = [];
+    const c = CAT[id], v = layout[id], it = Object.assign({id}, v), s = sh[id], bd = band[id], iss = [];
     if (!shapeInFloor(s)){
       const b = s.box, cx = b[0]+b[2]/2, cy = b[1]+b[3]/2;
       iss.push({lvl:'red', msg: inFloor(cx,cy) ? 'atravessa parede' : 'fora do apartamento'});
     }
-    for (const d of DOORS) if (doorHit(d, s.box) && (s.rect || cr(s.circle, s.box))) iss.push({lvl:'red', msg:'invade o giro da ' + d.name});
+    if (bd[0] < DOOR_TOP) for (const d of DOORS) if (doorHit(d, s.box) && (s.rect || cr(s.circle, s.box))) iss.push({lvl:'red', msg:'invade o giro da ' + d.name});
     if (!c.nocollide){
-      for (const f of FIXED) if (shapesHit(s, {rect:f.rect})) iss.push({lvl:'red', msg:'bate na ' + f.label.toLowerCase()});
+      for (const f of FIXED) if (bandsHit(bd, [0, f.h || 90]) && shapesHit(s, {rect:f.rect})) iss.push({lvl:'red', msg:'bate na ' + f.label.toLowerCase()});
       for (const o of ids){
-        if (o === id || CAT[o].nocollide || chairPair(id, o)) continue;
-        if (shapesHit(s, sh[o])) iss.push({lvl:'red', msg:'bate em: ' + CAT[o].label});
+        if (o === id || CAT[o].nocollide || chairPair(id, o) || onBase(layout, id, o)) continue;
+        if (bandsHit(bd, band[o]) && shapesHit(s, sh[o])) iss.push({lvl:'red', msg:'bate em: ' + CAT[o].label});
       }
       const cl = clearRect(it, c.clear);
       if (cl){
         const blk = [];
         if (!rectInFloor(cl)) blk.push('parede');
-        for (const f of FIXED) if (rr(cl, f.rect)) blk.push(f.label);
-        for (const o of ids){ if (o === id || CAT[o].nocollide || CAT[o].kind === 'chair') continue; if (shapesHit({rect:cl}, sh[o])) blk.push(CAT[o].short); }
-        for (const d of DOORS) if (doorHit(d, cl)) blk.push(d.name);
+        for (const f of FIXED) if (bandsHit(bd, [0, f.h || 90]) && rr(cl, f.rect)) blk.push(f.label);
+        for (const o of ids){ if (o === id || CAT[o].nocollide || CAT[o].kind === 'chair' || onBase(layout, id, o)) continue; if (bandsHit(bd, band[o]) && shapesHit({rect:cl}, sh[o])) blk.push(CAT[o].short); }
+        if (bd[0] < DOOR_TOP) for (const d of DOORS) if (doorHit(d, cl)) blk.push(d.name);
         if (blk.length) iss.push({lvl:'amber', msg:'frente bloqueada (' + blk.join(', ') + '): portas/gavetas/uso ficam apertados'});
+      }
+    }
+    if (v.apoio === 'parede' && !nearWall(s.box, 5)) iss.push({lvl:'amber', msg:'está “na parede”, mas não encosta em nenhuma (deixe a até 5 cm)'});
+    if (v.apoio === 'sobre'){
+      if (!baseOk(layout, id)) iss.push({lvl:'amber', msg:'a base escolhida não está na planta: conta como no chão'});
+      else {
+        const b = fp(Object.assign({id:v.base}, layout[v.base])), f = s.box;
+        if (f[0] < b[0]-1 || f[1] < b[1]-1 || f[0]+f[2] > b[0]+b[2]+1 || f[1]+f[3] > b[1]+b[3]+1)
+          iss.push({lvl:'amber', msg:'passa para fora do móvel de baixo (' + CAT[v.base].short + ')'});
       }
     }
     iss.forEach(i => i.lvl === 'red' ? red++ : amber++);
     items[id] = iss;
   }
   const passages = PASSAGES.map(p => {
-    const by = ids.filter(id => !CAT[id].nocollide && shapesHit(sh[id], {rect:p.r})).map(id => CAT[id].short);
+    const by = ids.filter(id => !CAT[id].nocollide && band[id][0] < HEAD_CLEAR && shapesHit(sh[id], {rect:p.r})).map(id => CAT[id].short);
     return {id:p.id, name:p.name, ok: by.length === 0, by};
   });
   passages.forEach(p => { if (!p.ok) amber++; });
-  return {items, passages, red, amber};
+  return {items, passages, red, amber, band};
 }
-// folga livre em cada lado do item (cm) até parede/móvel/peça fixa
+// folga livre em cada lado do item (cm) até parede/móvel/peça fixa na mesma faixa de altura
 function gaps(layout, id, max){
   max = max || 300;
-  const it = Object.assign({id}, layout[id]); const b = fp(it);
-  const others = placedIds(layout).filter(o => o !== id && !CAT[o].nocollide && !chairPair(id,o)).map(o => shapeOf(Object.assign({id:o}, layout[o])));
-  FIXED.forEach(f => others.push({rect:f.rect}));
+  const it = Object.assign({id}, layout[id]); const b = fp(it); const bd = itemBand(layout, id);
+  const others = placedIds(layout).filter(o => o !== id && !CAT[o].nocollide && !chairPair(id,o) && !onBase(layout, id, o) && bandsHit(bd, itemBand(layout, o)))
+    .map(o => shapeOf(Object.assign({id:o}, layout[o])));
+  FIXED.forEach(f => { if (bandsHit(bd, [0, f.h || 90])) others.push({rect:f.rect}); });
   const blocked = (x,y) => {
     if (!inFloor(x,y)) return true;
     for (const s of others){
@@ -328,17 +408,20 @@ function gaps(layout, id, max){
 // "Zerado": apartamento vazio, tudo na gaveta
 PRESETS.Z = {};
 const PRESET_IDS = ['A','B','C','Z'];
-// móveis criados pelo usuário: categoria -> cor no 2D (cat) e forma/altura no 3D (spec, em cm, ESTIMATIVA)
+// categorias dos móveis criados: cor no 2D (cat), forma no 3D (spec) e SUGESTÕES de altura/apoio (editáveis)
 const CUSTOM_CATS = {
-  cama:{label:'Cama', cat:'bed', spec:{bed:45, head:90}},
-  assento:{label:'Sofá / poltrona / cadeira', cat:'seat', spec:{sofa:true}},
-  mesa:{label:'Mesa / escrivaninha', cat:'table', spec:{table:75}},
-  alto:{label:'Armário alto / guarda-roupa', cat:'store', spec:{box:200}},
-  baixo:{label:'Móvel baixo (cômoda, rack, criado)', cat:'store', spec:{box:70}},
-  estante:{label:'Estante / prateleira', cat:'store', spec:{shelf:180}},
-  cozinha:{label:'Cozinha / eletrodoméstico', cat:'kitchen', spec:{box:90}},
-  tv:{label:'TV (não colide)', cat:'tv', spec:{tv:[100,160]}},
-  outro:{label:'Outro', cat:'store', spec:{box:80}},
+  cama:{label:'Cama', cat:'bed', spec:{bed:true}, h:45},
+  assento:{label:'Sofá / poltrona / cadeira', cat:'seat', spec:{sofa:true}, h:85},
+  mesa:{label:'Mesa / escrivaninha / bancada', cat:'table', spec:{table:true}, h:75},
+  alto:{label:'Armário alto / guarda-roupa', cat:'store', spec:{box:true}, h:200},
+  baixo:{label:'Móvel baixo (cômoda, rack, criado)', cat:'store', spec:{box:true}, h:70},
+  estante:{label:'Estante / prateleira de chão', cat:'store', spec:{shelf:true}, h:180},
+  aereo:{label:'Armário aéreo / prateleira de parede', cat:'store', spec:{box:true}, h:60, apoio:'parede', z:150},
+  quadro:{label:'Quadro / espelho', cat:'store', spec:{box:true}, h:60, apoio:'parede', z:120},
+  tv:{label:'TV', cat:'tv', spec:{tv:true}, h:65, apoio:'parede', z:100},
+  cozinha:{label:'Eletrodoméstico de chão', cat:'kitchen', spec:{box:true}, h:90},
+  objeto:{label:'Objeto em cima (micro-ondas, vitrola)', cat:'kitchen', spec:{box:true}, h:30, apoio:'sobre'},
+  outro:{label:'Outro', cat:'store', spec:{box:true}, h:80},
 };
 const CUSTOM_RE = /^novo_[a-z0-9]{1,16}$/;
 function isCustom(id){ return CUSTOM_RE.test(id); }
@@ -349,8 +432,8 @@ function registerCustom(layout){
   for (const id of Object.keys(layout)){
     if (!isCustom(id)) continue;
     const v = layout[id], cc = CUSTOM_CATS[v.tipo] || CUSTOM_CATS.outro, nome = String(v.nome || 'Móvel novo');
-    CAT[id] = {id, label:nome, short: nome.length > 18 ? nome.slice(0,17) + '…' : nome, w:v.w, d:v.d, clear:0, cat:cc.cat,
-      custom:true, tipo:v.tipo, nocollide: v.tipo === 'tv', est:'criado por você (' + cc.label.toLowerCase() + ')'};
+    CAT[id] = {id, label:nome, short: nome.length > 18 ? nome.slice(0,17) + '…' : nome, w:v.w, d:v.d, h:cc.h, clear:0, cat:cc.cat,
+      custom:true, tipo:v.tipo, est:'criado por você (' + cc.label.toLowerCase() + ')'};
   }
 }
 function customIds(layout){ return Object.keys(layout || {}).filter(isCustom); }
@@ -360,7 +443,8 @@ function buildLayout(preset, dims){
   for (const c of CATALOG){
     const dm = (dims && dims[c.id]) || {};
     const p = P[c.id];
-    L[c.id] = {x: p ? p[0] : 0, y: p ? p[1] : 0, r: p ? p[2] : 0, w: dm.w || c.w, d: dm.d || c.d, in: !!p};
+    L[c.id] = {x: p ? p[0] : 0, y: p ? p[1] : 0, r: p ? p[2] : 0, w: dm.w || c.w, d: dm.d || c.d, h: dm.h || c.h,
+      apoio: c.apoio || 'chao', z: c.z || 0, in: !!p};
   }
   return L;
 }
@@ -369,23 +453,44 @@ function validateState(o){
   const L = {};
   const num = (n, lo, hi, def) => (typeof n === 'number' && isFinite(n) && n >= lo && n <= hi) ? n : def;
   const pos = v => ({x:num(v.x,-400,900,0), y:num(v.y,-400,800,0), r:[0,90,180,270].includes(v.r)?v.r:0});
+  // layouts antigos (sem apoio/altura) => no chão, com a altura padrão. Exceção: a TV extra, que antes "não colidia", vai para a parede a 1,00 m.
+  const extra = (v, def, id) => {
+    const out = {h:num(v.h,1,300,def.h)};
+    out.apoio = Object.prototype.hasOwnProperty.call(APOIOS, v.apoio) ? v.apoio : (id === 'tvsu' ? 'parede' : 'chao');
+    out.z = num(v.z, 0, 280, out.apoio === 'parede' ? (def.z || 100) : 0);
+    if (typeof v.base === 'string' && (CATALOG.some(c => c.id === v.base) || isCustom(v.base))) out.base = v.base;
+    if (v.rel && typeof v.rel === 'object') out.rel = {ox:num(v.rel.ox,-400,400,0), oy:num(v.rel.oy,-400,400,0), dr:[0,90,180,270].includes(v.rel.dr)?v.rel.dr:0};
+    if (v.withBase === true) out.withBase = true;
+    return out;
+  };
   for (const c of CATALOG){
     const v = o.layout[c.id];
-    if (!v || typeof v !== 'object'){ L[c.id] = {x:0,y:0,r:0,w:c.w,d:c.d,in:false}; continue; }
-    L[c.id] = Object.assign(pos(v), {w:num(v.w,5,400,c.w), d:num(v.d,2,400,c.d), in:!!v.in});
+    if (!v || typeof v !== 'object'){ L[c.id] = {x:0,y:0,r:0,w:c.w,d:c.d,h:c.h,apoio:c.apoio||'chao',z:c.z||0,in:false}; continue; }
+    L[c.id] = Object.assign(pos(v), {w:num(v.w,5,400,c.w), d:num(v.d,2,400,c.d), in:!!v.in}, extra(v, {h:c.h, z:c.z}, c.id));
   }
   let n = 0;
   for (const id of Object.keys(o.layout)){
     const v = o.layout[id];
     if (!isCustom(id) || !v || typeof v !== 'object' || ++n > 60) continue;
     const nome = String(typeof v.nome === 'string' ? v.nome : 'Móvel novo').replace(/[<>]/g, '').trim().slice(0, 40) || 'Móvel novo';
-    L[id] = Object.assign(pos(v), {w:num(v.w,5,400,60), d:num(v.d,2,400,40), in:!!v.in, custom:true, nome,
-      tipo: Object.prototype.hasOwnProperty.call(CUSTOM_CATS, v.tipo) ? v.tipo : 'outro'});
+    const tipo = Object.prototype.hasOwnProperty.call(CUSTOM_CATS, v.tipo) ? v.tipo : 'outro', cc = CUSTOM_CATS[tipo];
+    L[id] = Object.assign(pos(v), {w:num(v.w,5,400,60), d:num(v.d,2,400,40), in:!!v.in, custom:true, nome, tipo}, extra(v, {h:cc.h, z:cc.z}, id));
   }
   registerCustom(L);
+  // "em cima de" sem base válida (inexistente, ela mesma, ciclo) => volta para o chão
+  for (const id of Object.keys(L)){
+    const v = L[id];
+    if (v.apoio !== 'sobre') continue;
+    let ok = !!(v.base && L[v.base] && v.base !== id), b = v.base, k = 0;
+    while (ok && b && L[b] && L[b].apoio === 'sobre' && k < 8){ b = L[b].base; if (b === id) ok = false; k++; }
+    if (!ok){ v.apoio = 'chao'; delete v.base; delete v.rel; }
+    else if (!v.rel) setRel(L, id);
+  }
+  syncAll(L);
   return {preset: PRESET_IDS.includes(o.preset) ? o.preset : 'C', layout: L};
 }
-if (typeof module !== 'undefined') module.exports = {CUSTOM_CATS, registerCustom, customIds, newCustomId, isCustom, placedIds, ROOMS, FLOOR, DOORS, PASSAGES, CATALOG, CAT, PRESETS, FIXED, fp, clearRect, rotateItem, analyze, gaps, buildLayout, validateState, doorHit, shapesHit, inFloor, roomOf};
+if (typeof module !== 'undefined') module.exports = {APOIOS, itemBand, bandsHit, setRel, syncChildren, syncAll, descendants, childrenOf, baseOk, nearWall, catDefaults,
+  CUSTOM_CATS, registerCustom, customIds, newCustomId, isCustom, placedIds, ROOMS, FLOOR, DOORS, PASSAGES, CATALOG, CAT, PRESETS, FIXED, fp, clearRect, rotateItem, analyze, gaps, buildLayout, validateState, doorHit, shapesHit, inFloor, roomOf};
 /*CORE-END*/
 
 </script>
@@ -548,12 +653,10 @@ function buildArch(){
 
 // ---------- móveis ----------
 const CATCOL = {bed:0x8fb3dc, store:0xc8a27a, seat:0x7fb48a, table:0xd9b45a, kitchen:0xa79ccf, future:0xe8e4da, tv:0x26292e};
-const HSPEC = { // alturas em cm (ESTIMATIVAS)
-  queen:{bed:50, head:105}, solteiro:{bed:45, head:90},
-  sofa:{sofa:true}, mesared:{round:75}, mesatrab:{table:75},
-  cad1:{chair:46}, cad2:{chair:46}, cad3:{chair:46}, cadtrab:{chair:50},
-  guardaroupa:{box:220}, armario2p:{box:180}, comoda:{box:85}, rack:{box:50}, estliv:{shelf:180}, estcoz:{shelf:180},
-  discos:{box:80}, geladeira:{box:170}, fogao:{box:85}, armp1:{box:85}, armp2:{box:85}, arara:{arara:160}, tvsu:{tv:[100,165]},
+const HSPEC = { // FORMA de cada móvel do catálogo; a ALTURA vem do campo h do layout (estimativa editável)
+  queen:{bed:true}, solteiro:{bed:true}, sofa:{sofa:true}, mesared:{round:true}, mesatrab:{table:true},
+  cad1:{chair:true}, cad2:{chair:true}, cad3:{chair:true}, cadtrab:{chair:true},
+  estliv:{shelf:true}, estcoz:{shelf:true}, arara:{arara:true}, tvsu:{tv:true},
 };
 function backRect(f, r, t){
   if (r === 0) return [f[0], f[1], f[2], t];
@@ -592,60 +695,53 @@ function buildFurniture(){
       push(0x9aa3ab, [r[0]+8, r[1]+10, r[2]-16, Math.min(40, r[3]-20), h, h+0.5]);
       continue;
     }
-    const c = CAT[it.id], s = HSPEC[it.id] || (c.custom ? (CUSTOM_CATS[c.tipo] || CUSTOM_CATS.outro).spec : {box:80}), f = fp(it), col = CATCOL[c.cat] || 0xbbbbbb;
-    let topY = 80;
+    const c = CAT[it.id], s = HSPEC[it.id] || (c.custom ? (CUSTOM_CATS[c.tipo] || CUSTOM_CATS.outro).spec : {box:true}), f = fp(it), col = CATCOL[c.cat] || 0xbbbbbb;
+    const band = itemBand(L, it.id), y0 = band[0], H = Math.max(1, band[1] - band[0]);
+    let topY = y0 + H;
     if (s.bed){
-      push(dk(col), [f[0], f[1], f[2], f[3], 0, 30]);
-      push(0xf4f1ea, [...inset(f, 2), 30, s.bed]);
-      const hb = backRect(f, it.r, 6); push(dk(col), [hb[0], hb[1], hb[2], hb[3], 0, s.head]);
-      const pl = backRect(inset(f, 6), it.r, 26); push(0xffffff, [pl[0], pl[1], pl[2], pl[3], s.bed, s.bed+10]);
-      topY = s.head;
+      push(dk(col), [f[0], f[1], f[2], f[3], y0, y0 + H*0.6]);
+      push(0xf4f1ea, [...inset(f, 2), y0 + H*0.6, y0 + H]);
+      const hb = backRect(f, it.r, 6); push(dk(col), [hb[0], hb[1], hb[2], hb[3], y0, y0 + H + 50]);
+      const pl = backRect(inset(f, 6), it.r, 26); push(0xffffff, [pl[0], pl[1], pl[2], pl[3], y0 + H, y0 + H + 10]);
+      topY = y0 + H + 50;
     } else if (s.sofa){
-      push(col, [f[0], f[1], f[2], f[3], 0, 42]);
-      const b = backRect(f, it.r, 20); push(dk(col), [b[0], b[1], b[2], b[3], 42, 85]);
-      topY = 85;
+      push(col, [f[0], f[1], f[2], f[3], y0, y0 + H*0.5]);
+      const b = backRect(f, it.r, Math.min(20, f[3]/3, f[2]/3)); push(dk(col), [b[0], b[1], b[2], b[3], y0 + H*0.5, y0 + H]);
     } else if (s.round){
       const g = new THREE.CylinderGeometry(f[2]/2*M, f[2]/2*M, 0.03, 40); const m = new THREE.Mesh(g, mat(col));
-      m.position.set((f[0]+f[2]/2)*M, (s.round-1.5)*M, (f[1]+f[3]/2)*M); m.castShadow = m.receiveShadow = true; furGroup.add(m);
-      push(dk(col), [f[0]+f[2]/2-4, f[1]+f[3]/2-4, 8, 8, 0, s.round-3]);
-      push(dk(col), [f[0]+f[2]/2-25, f[1]+f[3]/2-25, 50, 50, 0, 2]);
-      topY = s.round;
+      m.position.set((f[0]+f[2]/2)*M, (y0 + H - 1.5)*M, (f[1]+f[3]/2)*M); m.castShadow = m.receiveShadow = true; furGroup.add(m);
+      push(dk(col), [f[0]+f[2]/2-4, f[1]+f[3]/2-4, 8, 8, y0, y0 + H - 3]);
+      push(dk(col), [f[0]+f[2]/2-25, f[1]+f[3]/2-25, 50, 50, y0, y0 + 2]);
     } else if (s.table){
-      push(col, [f[0], f[1], f[2], f[3], s.table-3, s.table]);
-      legs(f, 0, s.table-3).forEach(l => push(dk(col), l));
-      topY = s.table;
+      push(col, [f[0], f[1], f[2], f[3], y0 + H - 3, y0 + H]);
+      legs(f, y0, y0 + H - 3).forEach(l => push(dk(col), l));
     } else if (s.chair){
-      const seat = inset(f, 3);
-      push(col, [seat[0], seat[1], seat[2], seat[3], s.chair-5, s.chair]);
-      legs(seat, 0, s.chair-5, 3).forEach(l => push(dk(col), l));
-      const b = backRect(seat, it.r, 4); push(dk(col), [b[0], b[1], b[2], b[3], s.chair, s.chair+42]);
-      topY = s.chair + 42;
+      const seat = inset(f, 3), sy = y0 + H*0.5;
+      push(col, [seat[0], seat[1], seat[2], seat[3], sy - 5, sy]);
+      legs(seat, y0, sy - 5, 3).forEach(l => push(dk(col), l));
+      const b = backRect(seat, it.r, 4); push(dk(col), [b[0], b[1], b[2], b[3], sy, y0 + H]);
     } else if (s.shelf){
-      push(col, [f[0], f[1], f[2], f[3], 0, 2]);
-      const b = backRect(f, it.r, 2); push(dk(col), [b[0], b[1], b[2], b[3], 0, s.shelf]);
+      push(col, [f[0], f[1], f[2], f[3], y0, y0 + 2]);
+      const b = backRect(f, it.r, 2); push(dk(col), [b[0], b[1], b[2], b[3], y0, y0 + H]);
       const vertical = (it.r % 180) === 0;
       const sideA = vertical ? [f[0], f[1], 2, f[3]] : [f[0], f[1], f[2], 2];
       const sideB = vertical ? [f[0]+f[2]-2, f[1], 2, f[3]] : [f[0], f[1]+f[3]-2, f[2], 2];
-      push(col, [...sideA, 0, s.shelf]); push(col, [...sideB, 0, s.shelf]);
-      for (let y = 36; y <= s.shelf; y += 36) push(col, [f[0], f[1], f[2], f[3], y-2, y]);
-      topY = s.shelf;
+      push(col, [...sideA, y0, y0 + H]); push(col, [...sideB, y0, y0 + H]);
+      for (let y = 36; y <= H; y += 36) push(col, [f[0], f[1], f[2], f[3], y0 + y - 2, y0 + y]);
     } else if (s.arara){
       const horiz = (it.r % 180) === 0;
       const p1 = horiz ? [f[0]+2, f[1]+f[3]/2-2] : [f[0]+f[2]/2-2, f[1]+2];
       const p2 = horiz ? [f[0]+f[2]-6, f[1]+f[3]/2-2] : [f[0]+f[2]/2-2, f[1]+f[3]-6];
-      push(0x6b7078, [p1[0], p1[1], 4, 4, 0, s.arara]); push(0x6b7078, [p2[0], p2[1], 4, 4, 0, s.arara]);
-      push(0x6b7078, horiz ? [f[0], f[1]+f[3]/2-1.5, f[2], 3, s.arara-3, s.arara] : [f[0]+f[2]/2-1.5, f[1], 3, f[3], s.arara-3, s.arara]);
-      push(0x6b7078, [f[0], f[1], f[2], f[3], 0, 3]);
-      const cl = inset(f, 8); push(0x9c8db8, [cl[0], cl[1], cl[2], cl[3], 70, s.arara-8]);
-      topY = s.arara;
+      push(0x6b7078, [p1[0], p1[1], 4, 4, y0, y0 + H]); push(0x6b7078, [p2[0], p2[1], 4, 4, y0, y0 + H]);
+      push(0x6b7078, horiz ? [f[0], f[1]+f[3]/2-1.5, f[2], 3, y0 + H - 3, y0 + H] : [f[0]+f[2]/2-1.5, f[1], 3, f[3], y0 + H - 3, y0 + H]);
+      push(0x6b7078, [f[0], f[1], f[2], f[3], y0, y0 + 3]);
+      const cl = inset(f, 8); if (H > 90) push(0x9c8db8, [cl[0], cl[1], cl[2], cl[3], y0 + Math.min(70, H*0.45), y0 + H - 8]);
     } else if (s.tv){
-      push(0x16181b, [f[0], f[1], f[2], f[3], s.tv[0], s.tv[1]]);
-      topY = s.tv[1];
+      push(0x16181b, [f[0], f[1], f[2], f[3], y0, y0 + H]);
     } else {
-      const h = s.box;
-      push(c.cat === 'future' ? 0xe8e4da : col, [f[0], f[1], f[2], f[3], 0, h], c.cat === 'future' ? {transparent:true, opacity:0.55} : null);
-      const fr = backRect([f[0]-1, f[1]-1, f[2]+2, f[3]+2], (it.r + 180) % 360, 1); push(dk(col), [fr[0], fr[1], fr[2], fr[3], 8, h-4]); // frente
-      topY = h;
+      const fut = c.cat === 'future';
+      push(fut ? 0xe8e4da : col, [f[0], f[1], f[2], f[3], y0, y0 + H], fut ? {transparent:true, opacity:0.55} : null);
+      if (H > 12){ const fr = backRect([f[0]-1, f[1]-1, f[2]+2, f[3]+2], (it.r + 180) % 360, 1); push(dk(col), [fr[0], fr[1], fr[2], fr[3], y0 + Math.min(8, H*0.15), y0 + H - Math.min(4, H*0.1)]); }
     }
     labels.push({text: c.short, x: f[0]+f[2]/2, z: f[1]+f[3]/2, y: topY + 22});
   }
@@ -692,7 +788,7 @@ let flashT = 0; function flash(t){ const h = $('#help'); h.textContent = t; h.st
 const RAD = 18;
 let furBoxes = [];
 function refreshFurBoxes(){
-  furBoxes = !layoutState ? [] : placedIds(layoutState.layout).filter(id => !CAT[id].nocollide).map(id => fp({id, ...layoutState.layout[id]})).concat(FIXED.map(f => f.rect));
+  furBoxes = !layoutState ? [] : placedIds(layoutState.layout).filter(id => !CAT[id].nocollide && itemBand(layoutState.layout, id)[0] < 150).map(id => fp({id, ...layoutState.layout[id]})).concat(FIXED.map(f => f.rect));
 }
 function pointFree(x, y){
   const t = cellAt(x, y);
@@ -710,7 +806,7 @@ function tryMove(dx, dy){ // desliza nas paredes
   if (walkable(player.x + dx, player.y)) player.x += dx;
   if (walkable(player.x, player.y + dy)) player.y += dy;
 }
-window.__apto3d = {camera, scene, walkable, tryMove, player, cellAt, T, get layout(){ return layoutState; }, setMode, RECTS};
+window.__apto3d = {band: id => itemBand(layoutState.layout, id), furCount: () => furGroup.children.length, camera, scene, walkable, tryMove, player, cellAt, T, get layout(){ return layoutState; }, setMode, RECTS};
 
 // ---------- entrada: joystick, olhar, teclado ----------
 const joy = $('#joy'), knob = $('#knob'); const stick = {x:0, y:0, id:null};
@@ -755,7 +851,7 @@ function applyShadows(){ renderer.shadowMap.enabled = OPT.shadows; sun.castShado
 $('#bReload').onclick = () => { readLayout(); buildFurniture(); refreshFurBoxes(); $('#ioMsg').textContent = 'Layout lido de novo.'; };
 document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
   const L = buildLayout(b.dataset.preset, {});
-  if (layoutState) for (const id of customIds(layoutState.layout)) L[id] = Object.assign({}, layoutState.layout[id], {in:false});
+  if (layoutState) for (const id of customIds(layoutState.layout)){ L[id] = Object.assign({}, layoutState.layout[id], {in:false}); delete L[id].withBase; }
   registerCustom(L);
   layoutState = {preset:b.dataset.preset, layout:L};
   $('#src').textContent = b.dataset.preset === 'Z' ? 'Apartamento zerado (vazio). Não muda o que está salvo na planta 2D.' : `Mostrando a proposta ${b.dataset.preset} original (não muda o que está salvo na planta 2D).`;
