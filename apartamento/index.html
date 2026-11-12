@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Móveis no apê novo</title>
+<style>
+:root{
+  --bg:#f5f3ee; --panel:#ffffff; --fg:#1d1f22; --muted:#5d646d; --line:#d8d3c6;
+  --wall:#3a3e44; --floor:#fffdf8; --win:#5d9ccc; --door:#7d838c; --accent:#2a64c9;
+  --red:#d0342a; --amber:#c98200; --ok:#2b8552;
+  --c-bed:#cfe0f5; --c-store:#ead9bf; --c-seat:#d3ead6; --c-table:#f3dfae; --c-kitchen:#e2ddf3;
+  --c-future:#fbfaf6; --c-tv:#4a4d52; --c-fixed:#e1e1e1; --clr:rgba(42,100,201,.10); --pass:rgba(201,130,0,.22);
+  --deco:rgba(0,0,0,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141619; --panel:#1d2024; --fg:#e7e5e0; --muted:#a2a8b0; --line:#34383e;
+    --wall:#c5c9cf; --floor:#24272c; --win:#6fb2e6; --door:#8d939b; --accent:#6c9cf0;
+    --red:#ff5a4d; --amber:#f0a92a; --ok:#4cc483;
+    --c-bed:#2d4866; --c-store:#5b4930; --c-seat:#2d5636; --c-table:#5f4f22; --c-kitchen:#443e60;
+    --c-future:#24272c; --c-tv:#c9ccd1; --c-fixed:#3a3d43; --clr:rgba(108,156,240,.14); --pass:rgba(240,169,42,.25);
+    --deco:rgba(255,255,255,.18);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141619; --panel:#1d2024; --fg:#e7e5e0; --muted:#a2a8b0; --line:#34383e;
+  --wall:#c5c9cf; --floor:#24272c; --win:#6fb2e6; --door:#8d939b; --accent:#6c9cf0;
+  --red:#ff5a4d; --amber:#f0a92a; --ok:#4cc483;
+  --c-bed:#2d4866; --c-store:#5b4930; --c-seat:#2d5636; --c-table:#5f4f22; --c-kitchen:#443e60;
+  --c-future:#24272c; --c-tv:#c9ccd1; --c-fixed:#3a3d43; --clr:rgba(108,156,240,.14); --pass:rgba(240,169,42,.25);
+  --deco:rgba(255,255,255,.18);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:16px}
+h1{font-size:1.45rem;margin:.2em 0 .1em}
+h2{font-size:1.15rem;margin:1.6em 0 .5em}
+h3{font-size:1rem;margin:1em 0 .3em}
+p,li{max-width:75ch}
+.sub{color:var(--muted);margin:0 0 1em}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.toolbar .grp{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:7px;padding:6px 10px;cursor:pointer;min-height:34px}
+button:hover{border-color:var(--accent)}
+button.on,button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+label.chk{display:inline-flex;gap:5px;align-items:center;font-size:.88rem;padding:4px 6px;border:1px solid var(--line);border-radius:7px;background:var(--panel);min-height:34px}
+select,input[type=number],textarea{font:inherit;color:var(--fg);background:var(--floor);border:1px solid var(--line);border-radius:6px;padding:5px 6px}
+input[type=number]{width:5.5em}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}
+@media (max-width:860px){.app{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+#plan{display:block;width:100%;height:min(72vh,680px);min-height:320px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.app>div{min-width:0}
+@media (max-width:600px){#plan{height:62vh}}
+.hint{font-size:.8rem;color:var(--muted);padding:4px 10px 8px}
+.side{display:flex;flex-direction:column;gap:10px}
+.side h3{margin:0 0 .4em}
+.dims{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:.4em 0}
+.dims label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted)}
+.gaps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:.82rem;margin:.4em 0}
+.gaps div{border:1px solid var(--line);border-radius:6px;padding:3px 4px;text-align:center}
+.gaps b{display:block;font-size:.95rem}
+.iss{margin:.3em 0 0;padding-left:1.1em;font-size:.86rem}
+.iss li.red{color:var(--red)} .iss li.amber{color:var(--amber)}
+.status{font-weight:600}
+.status.red{color:var(--red)} .status.amber{color:var(--amber)} .status.ok{color:var(--ok)}
+.drawer{max-height:300px;overflow:auto;font-size:.86rem}
+.drawer .row{display:flex;justify-content:space-between;gap:6px;align-items:center;padding:3px 0;border-bottom:1px dashed var(--line)}
+.drawer .row button{min-height:28px;padding:2px 8px;font-size:.8rem}
+.drawer .out{color:var(--muted)}
+details>summary{cursor:pointer;font-weight:600}
+textarea{width:100%;min-height:110px;font:12px/1.35 ui-monospace,Menlo,monospace}
+.msg{font-size:.82rem;color:var(--muted);min-height:1.2em}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.8rem;color:var(--muted);margin:6px 0}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+.sw{width:14px;height:10px;border:1px solid var(--muted);display:inline-block;border-radius:2px}
+.props{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px}
+.props .card h3{margin-top:0}
+.pro{color:var(--ok);font-weight:600} .con{color:var(--red);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
+.tblwrap{overflow-x:auto}
+.est{color:var(--amber);font-size:.78rem;font-weight:600}
+/* SVG */
+.wall{fill:var(--wall)} .floor{fill:var(--floor)} .gapf{fill:var(--floor)}
+.winf{fill:var(--floor);stroke:var(--win);stroke-width:1.5}
+.winl{stroke:var(--win);stroke-width:2}
+.door{fill:none;stroke:var(--door);stroke-width:1.4;stroke-dasharray:4 3}
+.leaf{stroke:var(--door);stroke-width:3}
+.swingf{fill:var(--door);opacity:.07}
+.rail{stroke:var(--wall);stroke-width:2}
+.shaft{fill:none;stroke:var(--floor);stroke-width:1.5}
+.rlab{fill:var(--muted);font-size:13px;font-weight:600;text-anchor:middle;pointer-events:none}
+.rdim{fill:var(--muted);font-size:10.5px;text-anchor:middle;pointer-events:none}
+.fixed{fill:var(--c-fixed);stroke:var(--muted);stroke-width:1}
+.flab{fill:var(--muted);font-size:9.5px;text-anchor:middle;pointer-events:none}
+.clr{fill:var(--clr);stroke:var(--accent);stroke-width:.8;stroke-dasharray:2 3;pointer-events:none}
+.clr.warn{fill:var(--pass);stroke:var(--amber)}
+.pz{fill:var(--pass);stroke:var(--amber);stroke-width:1.2;stroke-dasharray:5 4;pointer-events:none}
+.pz.okz{fill:none;stroke:var(--ok);opacity:.7}
+.it{cursor:move}
+.it .sh{stroke:var(--fg);stroke-width:1.2;stroke-opacity:.55}
+.it.cat-bed .sh{fill:var(--c-bed)} .it.cat-store .sh{fill:var(--c-store)} .it.cat-seat .sh{fill:var(--c-seat)}
+.it.cat-table .sh{fill:var(--c-table)} .it.cat-kitchen .sh{fill:var(--c-kitchen)}
+.it.cat-future .sh{fill:var(--c-future);stroke-dasharray:6 4;stroke-opacity:.9}
+.it.cat-tv .sh{fill:var(--c-tv)}
+.it .deco{fill:var(--deco);pointer-events:none}
+.it text{fill:var(--fg);text-anchor:middle;dominant-baseline:central;pointer-events:none;font-weight:600}
+.it text.dm{font-weight:400;fill:var(--muted)}
+.it.cat-tv text{fill:var(--fg)}
+.it.warn .sh{stroke:var(--amber);stroke-width:2.5;stroke-opacity:1;stroke-dasharray:5 3}
+.it.bad .sh{stroke:var(--red);stroke-width:3.5;stroke-opacity:1;stroke-dasharray:none}
+.it.sel .sh{stroke:var(--accent);stroke-width:3.5;stroke-opacity:1}
+.it.bad.sel .sh{stroke:var(--red)}
+.selbox{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:3 3;pointer-events:none}
+.scale line{stroke:var(--fg);stroke-width:2} .scale text{fill:var(--fg);font-size:11px}
+</style>
+</head>
+<body>
+<main>
+<h1>Móveis no apê novo: 3 propostas</h1>
+<p class="sub">Planta do apê (escala 1:75). As três propostas usam os móveis que você já tem. Carregue uma delas e arraste os móveis; as medidas dos móveis são <b>estimativas</b> até você trocar pela medida da trena.</p>
+
+<div class="toolbar" role="toolbar" aria-label="Propostas e ferramentas">
+  <div class="grp">
+    <button data-preset="A">Proposta A</button>
+    <button data-preset="B">Proposta B</button>
+    <button data-preset="C">Proposta C</button>
+    <button id="btnReset" title="Volta as posições da proposta atual (mantém as medidas que você digitou)">Resetar</button>
+  </div>
+  <div class="grp">
+    <label class="chk"><input type="checkbox" id="optDims"> Medidas</label>
+    <label class="chk"><input type="checkbox" id="optSnap" checked> Snap 5 cm</label>
+    <label class="chk"><input type="checkbox" id="optPass"> Passagens</label>
+  </div>
+  <div class="grp">
+    <button id="zIn" aria-label="Aproximar">+</button>
+    <button id="zOut" aria-label="Afastar">−</button>
+    <select id="focus" aria-label="Ver cômodo">
+      <option value="all">Ver tudo</option>
+      <option value="sala">Sala + cozinha</option>
+      <option value="quartos">Quartos</option>
+      <option value="q01">Quarto 01</option>
+      <option value="q02">Quarto 02</option>
+      <option value="varanda">Varanda</option>
+    </select>
+  </div>
+</div>
+
+<div class="app">
+  <div>
+    <div class="stage">
+      <svg id="plan" xmlns="http://www.w3.org/2000/svg" viewBox="-200 -200 880 725" preserveAspectRatio="xMidYMid meet" aria-label="Planta do apartamento com os móveis">
+        <g id="lStatic"></g><g id="lClr"></g><g id="lPass"></g><g id="lItems"></g><g id="lSel"></g>
+      </svg>
+      <div class="hint">Arraste o móvel para mover. Toque duplo (ou tecla R) gira 90°. Arraste o fundo para mover a planta; pinça ou roda do mouse para zoom. Setas movem 1 cm (Shift: 5 cm), Delete manda para a gaveta.</div>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--c-bed)"></i>camas</span>
+      <span><i class="sw" style="background:var(--c-store)"></i>armários/estantes</span>
+      <span><i class="sw" style="background:var(--c-seat)"></i>assentos</span>
+      <span><i class="sw" style="background:var(--c-table)"></i>mesas</span>
+      <span><i class="sw" style="background:var(--c-kitchen)"></i>cozinha</span>
+      <span><i class="sw" style="border-style:dashed"></i>futuro</span>
+      <span><i class="sw" style="background:var(--clr);border-style:dotted"></i>área de uso (portas, gavetas, cadeira)</span>
+      <span><i class="sw" style="border:2px solid var(--red)"></i>conflito</span>
+      <span><i class="sw" style="border:2px dashed var(--amber)"></i>aviso</span>
+    </div>
+  </div>
+  <div class="side">
+    <div class="card" id="selPanel"><h3>Móvel selecionado</h3><p class="msg">Toque num móvel para ver e editar a medida.</p></div>
+    <div class="card"><h3>Conferência <span id="sum" class="status"></span></h3><div id="check"></div></div>
+    <div class="card"><details id="drawerBox"><summary>Gaveta de móveis</summary><div class="drawer" id="drawer"></div></details></div>
+    <div class="card"><details><summary>Salvar / exportar</summary>
+      <p class="msg" id="storeMsg"></p>
+      <div class="toolbar"><button id="btnExport">Exportar (copiar)</button><button id="btnImport">Importar do texto</button><button id="btnDimsReset">Medidas de volta à estimativa</button></div>
+      <textarea id="json" spellcheck="false" aria-label="Layout em JSON"></textarea>
+      <p class="msg" id="ioMsg"></p>
+    </details></div>
+  </div>
+</div>
+
+<h2>As três propostas</h2>
+<div class="props">
+  <div class="card">
+    <h3>A: escritório no quarto 02 + mesa na varanda</h3>
+    <p>Quarto 02: mesa de trabalho embaixo da janela, de frente para ela; a cama do filho no canto do fundo, encostada na parede; a cômoda na parede do fundo. Sala só para descanso: sofá de costas para a varanda, de frente para o rack com a TV na parede de baixo (2,45 m livres). A mesa redonda vai para a varanda. No quarto 01, a queen com a cabeceira na parede da direita e o armário de 2 portas mais a arara na parede de baixo.</p>
+    <p><span class="pro">Prós:</span> escritório de verdade, com luz natural e porta para fechar; a sala fica livre; a varanda (6,35 m², maior que a cozinha) vira a sala de jantar; no quarto 01 sobram 69 cm no pé da cama, 62 cm do lado da janela e 65 cm até o armário.</p>
+    <p><span class="con">Contras:</span> de frente para a janela a tela fica contra a luz (precisa de persiana); a varanda só tem tela, então chuva e sol pegam na mesa (madeira estraga); à mesa cabem 2 cadeiras, e a 3ª fica encostada; à noite não tem mesa boa na sala, o notebook vai no sofá ou na varanda; a TV fica a ~83 cm da frente do sofá (~1,3 m dos olhos, bom para TV de até ~43").</p>
+    <button data-preset="A" class="pri">Carregar A</button>
+  </div>
+  <div class="card">
+    <h3>B: sala para trabalho noturno + mesa redonda</h3>
+    <p>A mesa redonda fica no canto da sala, encostada na parede da cozinha e ao lado da porta da varanda, que dá luz. É a mesa das refeições e do notebook à noite, com as 3 cadeiras. O sofá encosta na parede de 2,33 m, o rack fica na parede de baixo à esquerda e a estante de livros embaixo, ao lado do sofá. Quarto 02 pensado para o filho: a cama no canto, debaixo de parte da janela, e a mesa de trabalho na parede do fundo, com a janela do lado (é a posição que menos dá reflexo na tela); a arara fica na parede da porta.</p>
+    <p><span class="pro">Prós:</span> a mesa da noite fica a 1 passo da cozinha, com tomada perto da porta da varanda (canaleta); o miolo da sala fica livre (passagem de 77 cm ou mais); no quarto 02 a tela fica sem reflexo; no quarto 01 cabem queen, armário e cômoda.</p>
+    <p><span class="con">Contras:</span> a TV fica de lado para o sofá (uns 33°), não de frente; a mesa encosta na metade esquerda da porta de correr, então se passa pela metade direita; a cama do filho debaixo da janela atrapalha um pouco para abrir a janela; o rack e a estante ficam na parede do hall, à vista de quem entra.</p>
+    <button data-preset="B" class="pri">Carregar B</button>
+  </div>
+  <div class="card">
+    <h3>C (recomendada): sala completa + guarda-roupa do casal</h3>
+    <p>Sala: o sofá de frente para a TV (78 cm entre o sofá e o rack), a estante de livros ao lado do rack e a mesa redonda no canto, com 2 cadeiras, para o notebook à noite e as refeições (a 3ª cadeira fica na varanda). <b>Quarto 01:</b> a queen com a cabeceira na parede da direita e o <b>guarda-roupa do casal na parede de baixo, até 2,20 m de largura e 55 cm de fundo, com portas de correr</b>. Ficam 60 cm entre a cama e o guarda-roupa, 62 cm do lado da janela e 69 cm no pé. A TV extra vai na parede em frente à cama (fio com canaleta). Quarto 02 para o filho e o trabalho de dia: a cama na parede do fundo, a mesa embaixo da janela e o armário de 2 portas e a cômoda (que passam a ser do filho) nas outras paredes.</p>
+    <p><span class="pro">Prós:</span> é a única em que o guarda-roupa do casal cabe sem tirar a cama do lugar; a TV fica de frente para o sofá; trabalho de dia no quarto 02 e à noite na mesa redonda; não sobra móvel no meio do caminho.</p>
+    <p><span class="con">Contras:</span> 60 cm entre a cama e o guarda-roupa é o mínimo, e só funciona com porta de correr; à mesa redonda cabem 2 cadeiras; o quarto 02 fica cheio (5 móveis), com 49 cm entre o armário e a cama do filho. Antes de comprar o guarda-roupa, a arara e o armário de 2 portas ficam na parede dele: 100 + 80 = 180 cm, e a parede tem 220 cm.</p>
+    <button data-preset="C" class="pri">Carregar C</button>
+  </div>
+</div>
+<p class="msg">Nas três propostas a cozinha fica igual: fogão, pia (já vem da obra) e geladeira na parede da esquerda, e um armário pequeno na parede da direita. Fica um <b>aviso</b> de propósito: o forno do fogão e a porta da cozinha para a varanda não abrem ao mesmo tempo, e isso não tem como evitar.</p>
+
+<h2>O que não coube / o que sobra</h2>
+<div class="card">
+<ul>
+  <li><b>Na cozinha não cabem a mesa redonda, a estante aberta e o 2º armário pequeno.</b> A cozinha tem 1,60 m de largura e a pia ocupa 60 cm, então sobra um corredor de ~1 m. A estante aberta foi para o hall (parede de cima, sem bater na porta de entrada). O 2º armário pequeno foi para a área de serviço da varanda, para produtos de limpeza. Se ele for de MDF comum, vai sofrer com a umidade. Se os armários pequenos forem aéreos (de parede), vão em cima da pia e o problema some.</li>
+  <li><b>Mesa de trabalho + mesa redonda + sofá juntos na sala não cabem</b> mantendo 60 cm de passagem até a varanda, a cozinha e o corredor. Por isso a mesa de trabalho fica sempre no quarto 02.</li>
+  <li><b>No quarto 01 só cabe um conjunto na parede de 2,20 m:</b> ou o guarda-roupa novo, ou armário + arara/cômoda. A cômoda, a arara e o armário juntos não cabem lá: somam 280 cm.</li>
+  <li><b>Proposta C, depois de comprar o guarda-roupa: a arara sobra.</b> O armário de 2 portas e a cômoda vão para o filho, no quarto 02.</li>
+  <li><b>Proposta A:</b> a 3ª cadeira não cabe à mesa da varanda (são 1,60 m de fundo). Ela fica encostada e entra quando tem visita.</li>
+  <li>Nada vai para o banho (2,33 m de comprimento, sem espaço para móvel).</li>
+</ul>
+</div>
+
+<h2>Medidas para confirmar com a trena</h2>
+<div class="card">
+<p>Em ordem do que mais muda o layout. Depois de medir, toque no móvel e digite a medida: a borda fica vermelha se deixar de caber.</p>
+<ol>
+  <li><b>Sofá: largura e profundidade.</b> Nas propostas A e C, se passar de 180 cm de largura, a passagem de 60 cm até a cozinha fica menor. Se tiver mais de 85 cm de fundo, fica mais perto da TV.</li>
+  <li><b>Cama queen com a cabeceira: comprimento total.</b> Cada cm além de 198 sai dos 69 cm do pé da cama, e a cabeceira costuma somar de 5 a 10 cm.</li>
+  <li><b>Armário de 2 portas: largura, profundidade e o quanto as portas abrem.</b> Na proposta C, ele cabe no quarto 02 com 75 cm livres na frente.</li>
+  <li><b>Mesa de trabalho: largura e profundidade.</b> Usei 120 × 60. Ela cabe com até ~140 cm de largura nas três propostas sem mexer em mais nada. Acima disso, encosta na cama do filho (na B e na C).</li>
+  <li><b>Cama de solteiro: comprimento com a cabeceira.</b> Na proposta C ela ocupa a parede de 2,55 m e sobram 67 cm até a parede.</li>
+  <li><b>Rack: largura.</b> Na proposta C o máximo é ~160 cm, ao lado da estante de livros.</li>
+  <li><b>Cômoda e arara.</b> Medir também o quanto as gavetas saem.</li>
+  <li><b>Geladeira: largura, profundidade e o lado da dobradiça.</b> No vão ao lado da pia cabe até ~64 cm de largura, ou até ~70 se a geladeira encostar na pia.</li>
+  <li><b>Os 2 armários pequenos: são de chão ou de parede?</b> Isso decide se cabem na cozinha.</li>
+  <li><b>Mesa redonda (diâmetro) e cadeiras, móvel de discos e estante de livros.</b></li>
+  <li><b>No apartamento:</b> a largura real do vão entre a cozinha e a sala (eu li ~1,13 m), a largura das portas, a altura do peitoril das janelas dos quartos e onde ficam as tomadas.</li>
+</ol>
+</div>
+
+<h2>Como li a planta</h2>
+<div class="card">
+<ul>
+  <li>A folha está girada 90°. Girei a planta no sentido anti-horário para o texto ficar de pé: a varanda e a janela do quarto 01 ficam em cima, e o hall de entrada embaixo à esquerda. Os pontos que não têm cota (posição das portas e janelas) medi no desenho, na escala; a margem de erro é de uns ±3 cm.</li>
+  <li><b>Sala: 2,40 × 4,08 m.</b> O 4,08 é a soma de 0,85 (parede) + 0,90 (passagem para a circulação) + 2,33 (parede do quarto 02): 2,40 × 4,08 = 9,79 m², que bate com os 9,78 da planta. O <b>3,61</b> é a largura da sala mais o hall (2,40 + 1,21).</li>
+  <li><b>Cozinha: 1,60 × 2,71 m.</b> Aqui a minha leitura é diferente da descrição recebida: o <b>1,58 é o trecho de PAREDE</b> entre a cozinha e a sala, do lado da varanda. O <b>vão aberto para a sala é o resto, ~1,13 m</b> (2,71 − 1,58), do lado do hall. Outro ponto: 1,60 × 2,71 dá 4,34 m², menos que os 4,59 oficiais. Usei 1,60, que é o pior caso. Vale conferir na obra.</li>
+  <li><b>Hall:</b> 1,21 × ~1,25 m (1,51 m²), aberto para a sala.</li>
+  <li><b>Quarto 01:</b> 2,67 × 3,35 m, mais um nicho de 0,27 × 0,90 onde fica a porta (2,94 = 2,67 + 0,27). Dá 9,19 m², igual à planta. A janela (~1,20 m) fica na parede de cima, a mesma da varanda.</li>
+  <li><b>Quarto 02:</b> 2,55 × 3,16 m = 8,06 m². A janela (~1,20 m) fica na parede da direita.</li>
+  <li><b>Varanda:</b> 4,12 × 1,60 m, menos o shaft de 0,30 × 0,78 no canto (3,82 = 4,12 − 0,30), o que dá 6,36 m². O tanque está desenhado ao lado do shaft. O lado de cima é o guarda-corpo (aberto, só tela).</li>
+  <li><b>Circulação:</b> 1,05 × 0,90 m. Por ela se chega ao banho (2,33 de comprimento, com o box de 0,95), ao quarto 01 e ao quarto 02.</li>
+  <li><b>Portas (larguras sem cota, medidas no desenho):</b>
+    <ul>
+      <li>entrada: ~0,80, abre para dentro do hall, com a dobradiça do lado esquerdo;</li>
+      <li>cozinha→varanda: ~0,80, abre para dentro da cozinha e encosta na parede da sala;</li>
+      <li>quartos: ~0,70, abrem para dentro;</li>
+      <li>banho: ~0,60;</li>
+      <li>porta de correr da varanda: ~1,20, no meio da parede da sala, com ~0,60 de parede de cada lado.</li>
+    </ul>
+  </li>
+  <li>A cozinha e a sala não têm janela: a ventilação é pela varanda. Os quadrados desenhados por fora, perto das janelas dos quartos, parecem ser o lugar da condensadora do ar-condicionado.</li>
+  <li>Restrições respeitadas: nenhuma parede foi cortada ou movida; a varanda continua aberta; tomada nova só com canaleta externa (perto da mesa de trabalho, do rack e da mesa redonda).</li>
+</ul>
+</div>
+
+<h2>Medidas usadas (todas são estimativas)</h2>
+<div class="card tblwrap"><table id="estTable"><thead><tr><th>Móvel</th><th>Medida usada (cm)</th><th></th></tr></thead><tbody></tbody></table></div>
+<p class="msg">Escala do desenho: 1 unidade do SVG = 1 cm. A conferência ao lado é recalculada a cada movimento: ela verifica se o móvel está dentro dos cômodos, se bate em outro móvel, na pia ou no tanque, se invade o giro das portas e se a frente (portas, gavetas, cadeira) e as passagens estão livres.</p>
+</main>
+<script>
+/*CORE-START*/
+// Unidade: centímetro. Origem (0,0) = canto interno de cima/esquerda da sala,
+// com a planta girada para o texto ficar de pé (varanda em cima, hall embaixo à esquerda).
+const WALL = 14;
+const ROOMS = [
+  {id:'varanda', name:'Varanda', dim:'4,12 × 1,60', rects:[[-142,-172,382,160],[-172,-94,30,82]],
+   wall:[[0,4,WALL,WALL],[WALL,0,0,WALL]], lab:[30,-140]},
+  {id:'cozinha', name:'Cozinha', dim:'1,60 × 2,71', rects:[[-172,0,160,271]], lab:[-80,135]},
+  {id:'hall', name:'Hall', dim:'1,21 × 1,25', rects:[[-121,283,121,125]], lab:[-45,395]},
+  {id:'sala', name:'Sala', dim:'2,40 × 4,08', rects:[[0,0,240,408]], lab:[120,335]},
+  {id:'circ', name:'Circ.', dim:'1,05 × 0,90', rects:[[240,85,105,90]], lab:[292,140]},
+  {id:'banho', name:'Banho', dim:'(sem móveis)', rects:[[252,-158,120,233]], lab:[312,-40]},
+  {id:'q01', name:'Quarto 01', dim:'2,67 × 3,35', rects:[[385,-158,267,335],[358,87,27,90]], lab:[560,-125]},
+  {id:'q02', name:'Quarto 02', dim:'2,55 × 3,16', rects:[[252,191,255,316]], lab:[405,398]},
+];
+// vão aberto (sem porta) entre cozinha e sala: conta como piso
+const OPEN_GAPS = [[-12,158,12,113]];
+const FLOOR = ROOMS.flatMap(r => r.rects).concat(OPEN_GAPS);
+// portas de abrir: dobradiça h, raio r, quadrante (sx,sy), ponta fechada e ponta aberta
+const DOORS = [
+  {id:'entrada', name:'porta de entrada', h:[-84,408], r:79, sx:1, sy:-1, closed:[-5,408], open:[-84,329], gap:[-84,406,79,16]},
+  {id:'cozvar', name:'porta cozinha→varanda', h:[-22,0], r:79, sx:-1, sy:1, closed:[-101,0], open:[-22,79], gap:[-101,-14,79,16]},
+  {id:'banho', name:'porta do banho', h:[258,75], r:60, sx:1, sy:-1, closed:[318,75], open:[258,15], gap:[258,73,60,14]},
+  {id:'q01', name:'porta do quarto 01', h:[358,175], r:72, sx:1, sy:-1, closed:[358,103], open:[430,175], gap:[343,103,17,72]},
+  {id:'q02', name:'porta do quarto 02', h:[266,191], r:70, sx:1, sy:1, closed:[336,191], open:[266,261], gap:[266,173,70,20]},
+];
+const SLIDING = {gap:[60,-14,121,16]};
+const WINDOWS = [[464,-172,118,14],[507,259,14,120],[273,-172,58,14]];
+const FIXED = [
+  {id:'pia', label:'Pia (da obra)', rect:[-172,79,60,121]},
+  {id:'tanque', label:'Tanque', rect:[-142,-152,45,55]},
+];
+// áreas de passagem que precisam ficar livres (mín. ~50–60 cm)
+const PASSAGES = [
+  {id:'circ', name:'Circulação (corredor dos quartos)', r:[240,85,105,90]},
+  {id:'acirc', name:'Chegada da sala à circulação', r:[180,85,60,90]},
+  {id:'vars', name:'Porta da varanda (lado da sala)', r:[60,0,121,50]},
+  {id:'varv', name:'Porta da varanda (lado da varanda)', r:[60,-62,121,50]},
+  {id:'cozs', name:'Vão da cozinha (lado da sala)', r:[0,190,60,81]},
+  {id:'cozc', name:'Corredor da cozinha (frente da pia)', r:[-112,79,65,121]},
+  {id:'hall', name:'Hall (porta de entrada → sala)', r:[-84,318,84,90]},
+  {id:'cozv', name:'Porta cozinha→varanda (lado da varanda)', r:[-101,-62,79,50]},
+];
+// medidas = ESTIMATIVAS de mercado (w = largura/frente, d = profundidade). clear = área de uso na frente.
+const CATALOG = [
+  {id:'queen', label:'Cama queen', short:'Queen', w:158, d:198, clear:0, cat:'bed', est:'158×198 (box padrão; com cabeceira pode passar de 205)'},
+  {id:'solteiro', label:'Cama de solteiro (filho)', short:'Cama filho', w:88, d:188, clear:0, cat:'bed', est:'88×188'},
+  {id:'arara', label:'Arara', short:'Arara', w:100, d:45, clear:40, cat:'store', est:'100×45 (+40 para pegar roupa)'},
+  {id:'armario2p', label:'Armário 2 portas', short:'Armário 2p', w:80, d:50, clear:40, cat:'store', est:'80×50 (+40 de giro das portas)'},
+  {id:'comoda', label:'Cômoda', short:'Cômoda', w:100, d:45, clear:40, cat:'store', est:'100×45 (+40 das gavetas)'},
+  {id:'armp1', label:'Armário pequeno 1', short:'Arm. peq.', w:60, d:35, clear:25, cat:'kitchen', est:'60×35 (assumi de chão)'},
+  {id:'armp2', label:'Armário pequeno 2', short:'Arm. peq.', w:60, d:35, clear:25, cat:'kitchen', est:'60×35 (assumi de chão)'},
+  {id:'estcoz', label:'Estante de madeira aberta (cozinha)', short:'Estante', w:80, d:30, clear:0, cat:'kitchen', est:'80×30'},
+  {id:'geladeira', label:'Geladeira', short:'Geladeira', w:60, d:70, clear:60, cat:'kitchen', est:'60×70 (+60 da porta)'},
+  {id:'fogao', label:'Fogão 4 bocas', short:'Fogão', w:50, d:60, clear:50, cat:'kitchen', est:'50×60 (+50 do forno)'},
+  {id:'mesared', label:'Mesa redonda', short:'Mesa', w:90, d:90, clear:0, cat:'table', shape:'circle', est:'Ø90'},
+  {id:'cad1', label:'Cadeira 1 (mesa redonda)', short:'Cad.', w:45, d:45, clear:0, cat:'seat', kind:'chair', est:'45×45'},
+  {id:'cad2', label:'Cadeira 2 (mesa redonda)', short:'Cad.', w:45, d:45, clear:0, cat:'seat', kind:'chair', est:'45×45'},
+  {id:'cad3', label:'Cadeira 3 (mesa redonda)', short:'Cad.', w:45, d:45, clear:0, cat:'seat', kind:'chair', est:'45×45'},
+  {id:'sofa', label:'Sofá 2 lugares', short:'Sofá', w:180, d:85, clear:0, cat:'seat', est:'180×85'},
+  {id:'rack', label:'Rack', short:'Rack', w:140, d:40, clear:0, cat:'store', est:'140×40'},
+  {id:'estliv', label:'Estante de livros', short:'Livros', w:80, d:30, clear:0, cat:'store', est:'80×30'},
+  {id:'discos', label:'Móvel de discos', short:'Discos', w:80, d:40, clear:0, cat:'store', est:'80×40'},
+  {id:'mesatrab', label:'Mesa de trabalho', short:'Mesa trab.', w:120, d:60, clear:80, cat:'table', est:'120×60 (+80 para a cadeira)'},
+  {id:'cadtrab', label:'Cadeira de trabalho', short:'Cad.', w:60, d:60, clear:0, cat:'seat', kind:'chair', est:'60×60'},
+  {id:'guardaroupa', label:'Guarda-roupa do casal (FUTURO)', short:'Guarda-roupa (futuro)', w:220, d:55, clear:60, cat:'future', est:'220×55, portas de correr (a comprar)'},
+  {id:'tvsu', label:'TV extra (na parede ou sobre um móvel)', short:'TV extra', w:112, d:8, clear:0, cat:'tv', nocollide:true, est:'~112 de largura (TV de 50")'},
+];
+const CAT = Object.fromEntries(CATALOG.map(c => [c.id, c]));
+// posições: [x, y, r] = canto de cima/esquerda da pegada e rotação (0 = frente para baixo, 90 = frente para a esquerda, 180 = frente para cima, 270 = frente para a direita)
+const COMMON = {
+  fogao:[-172,29,270], geladeira:[-172,207,270], armp1:[-47,95,90],
+  estcoz:[-121,283,0], armp2:[-172,-80,270], discos:[200,0,90],
+};
+const PRESETS = {
+  A: Object.assign({}, COMMON, {
+    sofa:[60,200,0], rack:[80,368,180], estliv:[0,30,270],
+    mesared:[145,-162,0], cad1:[112,-139,0], cad2:[-20,-150,0], cad3:[195,-72,0],
+    queen:[454,-96,90], armario2p:[432,127,180], arara:[522,132,180],
+    mesatrab:[447,259,90], cadtrab:[377,289,0], solteiro:[252,319,180], comoda:[400,462,180],
+  }),
+  B: Object.assign({}, COMMON, {
+    mesared:[0,50,0], cad1:[13,18,0], cad2:[78,73,0], cad3:[32,127,0],
+    sofa:[155,190,90], rack:[0,368,180], estliv:[150,378,180],
+    queen:[454,-96,90], armario2p:[432,127,180], comoda:[532,132,180],
+    solteiro:[419,319,180], mesatrab:[280,447,180], cadtrab:[310,377,0], arara:[380,191,0],
+  }),
+  C: Object.assign({}, COMMON, {
+    sofa:[60,205,0], rack:[80,368,180], estliv:[0,378,180],
+    mesared:[0,50,0], cad1:[13,18,0], cad2:[78,73,0], cad3:[100,-120,0],
+    queen:[454,-96,90], guardaroupa:[432,122,180], tvsu:[385,-60,270],
+    solteiro:[252,419,270], mesatrab:[447,259,90], cadtrab:[377,289,0],
+    armario2p:[252,290,270], comoda:[340,191,0],
+  }),
+};
+
+function fp(it){ // pegada (rect) do item
+  const rot = ((it.r % 360) + 360) % 360;
+  const sw = rot % 180 === 0;
+  return [it.x, it.y, sw ? it.w : it.d, sw ? it.d : it.w];
+}
+function clearRect(it, c){
+  if (!c) return null;
+  const [x,y,w,h] = fp(it); const rot = ((it.r % 360) + 360) % 360;
+  if (rot === 0) return [x, y+h, w, c];
+  if (rot === 180) return [x, y-c, w, c];
+  if (rot === 90) return [x-c, y, c, h];
+  return [x+w, y, c, h];
+}
+function rotateItem(it){ // gira 90° mantendo o centro
+  const [x,y,w,h] = fp(it); const cx = x+w/2, cy = y+h/2;
+  it.r = (it.r + 90) % 360;
+  const [, , w2, h2] = fp(it);
+  it.x = Math.round(cx - w2/2); it.y = Math.round(cy - h2/2);
+  return it;
+}
+const EPS = 0.5;
+function rr(a,b){ return a[0] < b[0]+b[2]-EPS && b[0] < a[0]+a[2]-EPS && a[1] < b[1]+b[3]-EPS && b[1] < a[1]+a[3]-EPS; }
+function cr(c, r){ // círculo {cx,cy,rad} x retângulo
+  const nx = Math.max(r[0], Math.min(c.cx, r[0]+r[2])), ny = Math.max(r[1], Math.min(c.cy, r[1]+r[3]));
+  return (nx-c.cx)**2 + (ny-c.cy)**2 < (c.rad-EPS)**2 && r[2] > EPS && r[3] > EPS;
+}
+function shapeOf(it){
+  const c = CAT[it.id]; const f = fp(it);
+  if (c && c.shape === 'circle') return {circle:{cx:f[0]+f[2]/2, cy:f[1]+f[3]/2, rad:Math.min(f[2],f[3])/2}, box:f};
+  return {rect:f, box:f};
+}
+function shapesHit(a,b){
+  if (a.rect && b.rect) return rr(a.rect, b.rect);
+  if (a.circle && b.rect) return cr(a.circle, b.rect);
+  if (a.rect && b.circle) return cr(b.circle, a.rect);
+  const dx = a.circle.cx-b.circle.cx, dy = a.circle.cy-b.circle.cy;
+  return Math.hypot(dx,dy) < a.circle.rad + b.circle.rad - EPS;
+}
+function doorHit(d, rect){ // retângulo x quarto de círculo do giro da porta
+  const qx0 = d.sx > 0 ? d.h[0] : d.h[0]-d.r, qy0 = d.sy > 0 ? d.h[1] : d.h[1]-d.r;
+  const ix0 = Math.max(qx0, rect[0]), iy0 = Math.max(qy0, rect[1]);
+  const ix1 = Math.min(qx0+d.r, rect[0]+rect[2]), iy1 = Math.min(qy0+d.r, rect[1]+rect[3]);
+  if (ix1 - ix0 <= EPS || iy1 - iy0 <= EPS) return false;
+  const nx = Math.max(ix0, Math.min(d.h[0], ix1)), ny = Math.max(iy0, Math.min(d.h[1], iy1));
+  return Math.hypot(nx-d.h[0], ny-d.h[1]) < d.r - EPS;
+}
+function inFloor(px,py){ for (const r of FLOOR) if (px >= r[0]-0.01 && px <= r[0]+r[2]+0.01 && py >= r[1]-0.01 && py <= r[1]+r[3]+0.01) return true; return false; }
+function samples(a, len){ const n = Math.max(2, Math.ceil(len/4)+1), out = []; for (let i=0;i<n;i++) out.push(a + 0.5 + (len-1)*i/(n-1)); return out; }
+function rectInFloor(r){ for (const x of samples(r[0],r[2])) for (const y of samples(r[1],r[3])) if (!inFloor(x,y)) return false; return true; }
+function shapeInFloor(s){
+  if (s.rect) return rectInFloor(s.rect);
+  const {cx,cy,rad} = s.circle;
+  for (const x of samples(cx-rad, 2*rad)) for (const y of samples(cy-rad, 2*rad))
+    if ((x-cx)**2 + (y-cy)**2 <= (rad-1)**2 && !inFloor(x,y)) return false;
+  return true;
+}
+function chairPair(a, b){ // cadeira pode entrar embaixo de mesa
+  const ca = CAT[a], cb = CAT[b];
+  return (ca.kind === 'chair' && (b === 'mesared' || b === 'mesatrab')) || (cb.kind === 'chair' && (a === 'mesared' || a === 'mesatrab'));
+}
+function placedIds(layout){ return Object.keys(layout).filter(id => CAT[id] && layout[id].in); }
+function roomOf(px,py){ for (const r of ROOMS) for (const q of r.rects) if (px>=q[0]&&px<=q[0]+q[2]&&py>=q[1]&&py<=q[1]+q[3]) return r.name; return null; }
+
+function analyze(layout){
+  const ids = placedIds(layout);
+  const items = {}; let red = 0, amber = 0;
+  const sh = {}; ids.forEach(id => sh[id] = shapeOf(Object.assign({id}, layout[id])));
+  for (const id of ids){
+    const c = CAT[id], it = Object.assign({id}, layout[id]), s = sh[id], iss = [];
+    if (!shapeInFloor(s)){
+      const b = s.box, cx = b[0]+b[2]/2, cy = b[1]+b[3]/2;
+      iss.push({lvl:'red', msg: inFloor(cx,cy) ? 'atravessa parede' : 'fora do apartamento'});
+    }
+    for (const d of DOORS) if (doorHit(d, s.box) && (s.rect || cr(s.circle, s.box))) iss.push({lvl:'red', msg:'invade o giro da ' + d.name});
+    if (!c.nocollide){
+      for (const f of FIXED) if (shapesHit(s, {rect:f.rect})) iss.push({lvl:'red', msg:'bate na ' + f.label.toLowerCase()});
+      for (const o of ids){
+        if (o === id || CAT[o].nocollide || chairPair(id, o)) continue;
+        if (shapesHit(s, sh[o])) iss.push({lvl:'red', msg:'bate em: ' + CAT[o].label});
+      }
+      const cl = clearRect(it, c.clear);
+      if (cl){
+        const blk = [];
+        if (!rectInFloor(cl)) blk.push('parede');
+        for (const f of FIXED) if (rr(cl, f.rect)) blk.push(f.label);
+        for (const o of ids){ if (o === id || CAT[o].nocollide || CAT[o].kind === 'chair') continue; if (shapesHit({rect:cl}, sh[o])) blk.push(CAT[o].short); }
+        for (const d of DOORS) if (doorHit(d, cl)) blk.push(d.name);
+        if (blk.length) iss.push({lvl:'amber', msg:'frente bloqueada (' + blk.join(', ') + '): portas/gavetas/uso ficam apertados'});
+      }
+    }
+    iss.forEach(i => i.lvl === 'red' ? red++ : amber++);
+    items[id] = iss;
+  }
+  const passages = PASSAGES.map(p => {
+    const by = ids.filter(id => !CAT[id].nocollide && shapesHit(sh[id], {rect:p.r})).map(id => CAT[id].short);
+    return {id:p.id, name:p.name, ok: by.length === 0, by};
+  });
+  passages.forEach(p => { if (!p.ok) amber++; });
+  return {items, passages, red, amber};
+}
+// folga livre em cada lado do item (cm) até parede/móvel/peça fixa
+function gaps(layout, id, max){
+  max = max || 300;
+  const it = Object.assign({id}, layout[id]); const b = fp(it);
+  const others = placedIds(layout).filter(o => o !== id && !CAT[o].nocollide && !chairPair(id,o)).map(o => shapeOf(Object.assign({id:o}, layout[o])));
+  FIXED.forEach(f => others.push({rect:f.rect}));
+  const blocked = (x,y) => {
+    if (!inFloor(x,y)) return true;
+    for (const s of others){
+      if (s.rect){ const r = s.rect; if (x > r[0]+EPS && x < r[0]+r[2]-EPS && y > r[1]+EPS && y < r[1]+r[3]-EPS) return true; }
+      else if ((x-s.circle.cx)**2 + (y-s.circle.cy)**2 < (s.circle.rad-EPS)**2) return true;
+    }
+    return false;
+  };
+  const side = (pts, dx, dy) => {
+    let best = max;
+    for (const [x0,y0] of pts){ for (let t=1; t<=best; t+=1){ if (blocked(x0+dx*t, y0+dy*t)){ best = Math.min(best, t-1); break; } } }
+    return best;
+  };
+  const along = (a, len) => { const out=[]; for (let i=0;i<7;i++) out.push(a + 2 + (len-4)*i/6); return out; };
+  return {
+    esquerda: side(along(b[1],b[3]).map(y => [b[0], y]), -1, 0),
+    direita: side(along(b[1],b[3]).map(y => [b[0]+b[2], y]), 1, 0),
+    cima: side(along(b[0],b[2]).map(x => [x, b[1]]), 0, -1),
+    baixo: side(along(b[0],b[2]).map(x => [x, b[1]+b[3]]), 0, 1),
+  };
+}
+function buildLayout(preset, dims){
+  const P = PRESETS[preset], L = {};
+  for (const c of CATALOG){
+    const dm = (dims && dims[c.id]) || {};
+    const p = P[c.id];
+    L[c.id] = {x: p ? p[0] : 0, y: p ? p[1] : 0, r: p ? p[2] : 0, w: dm.w || c.w, d: dm.d || c.d, in: !!p};
+  }
+  return L;
+}
+function validateState(o){
+  if (!o || typeof o !== 'object' || !o.layout || typeof o.layout !== 'object') return null;
+  const L = {};
+  for (const c of CATALOG){
+    const v = o.layout[c.id];
+    const num = (n, lo, hi, def) => (typeof n === 'number' && isFinite(n) && n >= lo && n <= hi) ? n : def;
+    if (!v){ L[c.id] = {x:0,y:0,r:0,w:c.w,d:c.d,in:false}; continue; }
+    L[c.id] = {x:num(v.x,-400,900,0), y:num(v.y,-400,800,0), r:[0,90,180,270].includes(v.r)?v.r:0,
+      w:num(v.w,5,400,c.w), d:num(v.d,2,400,c.d), in:!!v.in};
+  }
+  return {preset: ['A','B','C'].includes(o.preset) ? o.preset : 'C', layout: L};
+}
+if (typeof module !== 'undefined') module.exports = {placedIds, ROOMS, FLOOR, DOORS, PASSAGES, CATALOG, CAT, PRESETS, FIXED, fp, clearRect, rotateItem, analyze, gaps, buildLayout, validateState, doorHit, shapesHit, inFloor, roomOf};
+/*CORE-END*/
+
+/*APP-START*/
+(function(){
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const KEY = 'apto-layout-v1';
+const $ = s => document.querySelector(s);
+const svg = $('#plan');
+const L_STATIC = $('#lStatic'), L_CLR = $('#lClr'), L_PASS = $('#lPass'), L_ITEMS = $('#lItems'), L_SEL = $('#lSel');
+const FULL = {x:-200, y:-200, w:880, h:725};
+const FOCUS = {all:FULL, sala:{x:-195,y:-30,w:460,h:470}, quartos:{x:240,y:-180,w:430,h:700}, q01:{x:345,y:-180,w:320,h:370}, q02:{x:240,y:170,w:290,h:350}, varanda:{x:-190,y:-190,w:445,h:200}};
+let view = Object.assign({}, FULL);
+let state = null, sel = null, storageOK = true;
+const opt = {dims:false, snap:true, pass:false};
+const r1 = n => Math.round(n);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ---------- armazenamento ----------
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(state)); storageOK = true; }
+  catch(e){ storageOK = false; }
+  const m = $('#storeMsg');
+  if (m) m.textContent = storageOK ? 'O layout fica salvo neste navegador automaticamente.' : 'Este navegador não deixou salvar (modo privado?). Use Exportar para guardar o layout.';
+}
+function load(){
+  try { const raw = localStorage.getItem(KEY); if (raw){ const v = validateState(JSON.parse(raw)); if (v) return v; } }
+  catch(e){ storageOK = false; }
+  return null;
+}
+function loadPreset(p, keepDims){
+  const dims = {};
+  if (keepDims && state) for (const id in state.layout) dims[id] = {w:state.layout[id].w, d:state.layout[id].d};
+  state = {preset:p, layout:buildLayout(p, dims)};
+  sel = null; save(); renderAll();
+  document.querySelectorAll('[data-preset]').forEach(b => b.classList.toggle('on', b.dataset.preset === p && b.closest('.toolbar')));
+}
+
+// ---------- desenho fixo (paredes, portas, janelas) ----------
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function rectEl(r, cls, parent){ return el('rect', {x:r[0], y:r[1], width:r[2], height:r[3], class:cls}, parent); }
+function drawStatic(){
+  const g = L_STATIC; g.textContent = '';
+  for (const room of ROOMS) room.rects.forEach((q, i) => {
+    const w = (room.wall && room.wall[i]) || [WALL,WALL,WALL,WALL]; // esquerda, cima, direita, baixo
+    rectEl([q[0]-w[0], q[1]-w[1], q[2]+w[0]+w[2], q[3]+w[1]+w[3]], 'wall', g);
+  });
+  rectEl([-186,-186,44,92], 'wall', g);                      // shaft
+  el('path', {d:'M-180 -180 L-148 -100 M-148 -180 L-180 -100', class:'shaft'}, g);
+  for (const room of ROOMS) room.rects.forEach(q => rectEl(q, 'floor', g));
+  OPEN_GAPS.forEach(q => rectEl([q[0]-2, q[1], q[2]+4, q[3]], 'gapf', g));
+  DOORS.forEach(d => rectEl(d.gap, 'gapf', g));
+  rectEl(SLIDING.gap, 'gapf', g);
+  rectEl([60,-9,62,3], 'fixed', g); rectEl([119,-5,62,3], 'fixed', g);
+  el('line', {x1:-142, y1:-170, x2:240, y2:-170, class:'rail'}, g);
+  WINDOWS.forEach(w => {
+    rectEl(w, 'winf', g);
+    if (w[2] > w[3]) el('line', {x1:w[0], y1:w[1]+w[3]/2, x2:w[0]+w[2], y2:w[1]+w[3]/2, class:'winl'}, g);
+    else el('line', {x1:w[0]+w[2]/2, y1:w[1], x2:w[0]+w[2]/2, y2:w[1]+w[3], class:'winl'}, g);
+  });
+  DOORS.forEach(d => {
+    const cx = d.closed[0]-d.h[0], cy = d.closed[1]-d.h[1], ox = d.open[0]-d.h[0], oy = d.open[1]-d.h[1];
+    const sweep = (cx*oy - cy*ox) > 0 ? 1 : 0;
+    el('path', {d:`M${d.h[0]} ${d.h[1]} L${d.closed[0]} ${d.closed[1]} A${d.r} ${d.r} 0 0 ${sweep} ${d.open[0]} ${d.open[1]} Z`, class:'swingf'}, g);
+    el('path', {d:`M${d.closed[0]} ${d.closed[1]} A${d.r} ${d.r} 0 0 ${sweep} ${d.open[0]} ${d.open[1]}`, class:'door'}, g);
+    el('line', {x1:d.h[0], y1:d.h[1], x2:d.open[0], y2:d.open[1], class:'leaf'}, g);
+  });
+  FIXED.forEach(f => { rectEl(f.rect, 'fixed', g); const t = el('text', {x:f.rect[0]+f.rect[2]/2, y:f.rect[1]+f.rect[3]/2+3, class:'flab'}, g); t.textContent = f.label; });
+  ROOMS.forEach(rm => {
+    const t = el('text', {x:rm.lab[0], y:rm.lab[1], class:'rlab'}, g); t.textContent = rm.name;
+    const t2 = el('text', {x:rm.lab[0], y:rm.lab[1]+13, class:'rdim'}, g); t2.textContent = rm.dim;
+  });
+  const sc = el('g', {class:'scale', transform:'translate(540 300)'}, g);
+  el('line', {x1:0, y1:0, x2:100, y2:0}, sc); el('line', {x1:0, y1:-5, x2:0, y2:5}, sc); el('line', {x1:100, y1:-5, x2:100, y2:5}, sc);
+  const st = el('text', {x:0, y:18}, sc); st.textContent = '1 m (1 unidade = 1 cm)';
+}
+
+// ---------- móveis ----------
+function itemOf(id){ return Object.assign({id}, state.layout[id]); }
+function backRect(f, r, t){
+  if (r === 0) return [f[0], f[1], f[2], t];
+  if (r === 180) return [f[0], f[1]+f[3]-t, f[2], t];
+  if (r === 90) return [f[0]+f[2]-t, f[1], t, f[3]];
+  return [f[0], f[1], t, f[3]];
+}
+function renderItems(){
+  const an = analyze(state.layout);
+  L_ITEMS.textContent = ''; L_CLR.textContent = ''; L_PASS.textContent = ''; L_SEL.textContent = '';
+  const ids = placedIds(state.layout);
+  // passagens
+  an.passages.forEach(p => {
+    if (!p.ok || opt.pass){ const pr = PASSAGES.find(x => x.id === p.id).r; rectEl(pr, 'pz' + (p.ok ? ' okz' : ''), L_PASS); }
+  });
+  // ordem: maiores embaixo, cadeiras e TV por cima
+  ids.sort((a,b) => { const z = id => (CAT[id].kind === 'chair' ? 2 : 0) + (CAT[id].nocollide ? 3 : 0); return z(a) - z(b); });
+  for (const id of ids){
+    const c = CAT[id], it = itemOf(id), f = fp(it), iss = an.items[id] || [];
+    const bad = iss.some(i => i.lvl === 'red'), warn = !bad && iss.length > 0;
+    const cl = clearRect(it, c.clear);
+    if (cl) rectEl(cl, 'clr' + (iss.some(i => i.lvl === 'amber') ? ' warn' : ''), L_CLR);
+    const g = el('g', {class:`it cat-${c.cat}${bad ? ' bad' : ''}${warn ? ' warn' : ''}${sel === id ? ' sel' : ''}`, 'data-id':id, tabindex:'0', role:'button', 'aria-label':c.label}, L_ITEMS);
+    if (c.shape === 'circle') el('circle', {cx:f[0]+f[2]/2, cy:f[1]+f[3]/2, r:Math.min(f[2],f[3])/2, class:'sh'}, g);
+    else el('rect', {x:f[0], y:f[1], width:f[2], height:f[3], rx: c.kind === 'chair' ? 8 : 2, class:'sh'}, g);
+    // detalhe de orientação: travesseiros nas camas, encosto no sofá
+    if (c.cat === 'bed'){
+      const t = 22, br = backRect(f, it.r, t), n = c.id === 'queen' ? 2 : 1;
+      const horiz = it.r % 180 === 0;
+      for (let k=0; k<n; k++){
+        const pad = 6, len = ((horiz ? f[2] : f[3]) - pad*(n+1)) / n;
+        const pr = horiz ? [br[0]+pad+k*(len+pad), br[1]+4, len, t-8] : [br[0]+4, br[1]+pad+k*(len+pad), t-8, len];
+        el('rect', {x:pr[0], y:pr[1], width:pr[2], height:pr[3], rx:4, class:'deco'}, g);
+      }
+    } else if (c.id === 'sofa'){
+      const br = backRect(f, it.r, 18); el('rect', {x:br[0], y:br[1], width:br[2], height:br[3], class:'deco'}, g);
+    } else if (c.cat !== 'tv' && c.shape !== 'circle' && c.kind !== 'chair'){
+      const fr = backRect(f, (it.r + 180) % 360, 3); el('rect', {x:fr[0], y:fr[1], width:fr[2], height:fr[3], class:'deco'}, g);
+    }
+    // rótulo
+    const label = c.short, vert = f[3] > f[2]*1.3 && f[2] < 75;
+    const avail = vert ? f[3] : f[2], thick = vert ? f[2] : f[3];
+    let fs = Math.max(6, Math.min(13, (avail-6)/(label.length*0.58), thick*0.42));
+    const cx = f[0]+f[2]/2, cy = f[1]+f[3]/2;
+    const tg = el('g', {transform:`translate(${cx} ${cy})${vert ? ' rotate(-90)' : ''}`}, g);
+    const showD = opt.dims && thick >= 14;
+    const t = el('text', {x:0, y: showD ? -fs*0.55 : 0, 'font-size':fs.toFixed(1)}, tg); t.textContent = label;
+    if (showD){
+      const dm = el('text', {x:0, y:fs*0.6, 'font-size':(fs*0.85).toFixed(1), class:'dm'}, tg);
+      dm.textContent = c.shape === 'circle' ? `Ø${it.w}` : `${it.w}×${it.d}`;
+    }
+  }
+  if (sel && state.layout[sel] && state.layout[sel].in){
+    const f = fp(itemOf(sel)); rectEl([f[0]-4, f[1]-4, f[2]+8, f[3]+8], 'selbox', L_SEL);
+  }
+  renderCheck(an);
+  return an;
+}
+function renderCheck(an){
+  const s = $('#sum');
+  s.className = 'status ' + (an.red ? 'red' : an.amber ? 'amber' : 'ok');
+  s.textContent = an.red ? `${an.red} conflito(s)` : an.amber ? `ok, ${an.amber} aviso(s)` : 'tudo cabe';
+  const rows = [];
+  for (const id of placedIds(state.layout)){
+    const iss = an.items[id]; if (!iss || !iss.length) continue;
+    rows.push(`<li class="${iss.some(i=>i.lvl==='red')?'red':'amber'}"><a href="#" data-pick="${id}">${esc(CAT[id].label)}</a>: ${iss.map(i=>esc(i.msg)).join('; ')}</li>`);
+  }
+  const pass = an.passages.map(p => `<li class="${p.ok ? '' : 'amber'}">${p.ok ? '✓' : '⚠'} ${esc(p.name)}${p.ok ? '' : ': bloqueada por ' + esc(p.by.join(', '))}</li>`).join('');
+  $('#check').innerHTML = (rows.length ? `<ul class="iss">${rows.join('')}</ul>` : '<p class="msg">Nenhum móvel batendo em parede, porta ou outro móvel.</p>') +
+    `<h3 style="margin-top:.6em;font-size:.9rem">Passagens</h3><ul class="iss">${pass}</ul>`;
+}
+function renderSel(){
+  const box = $('#selPanel');
+  if (!sel || !state.layout[sel]){ box.innerHTML = '<h3>Móvel selecionado</h3><p class="msg">Toque num móvel para ver e editar a medida.</p>'; return; }
+  const c = CAT[sel], v = state.layout[sel], circ = c.shape === 'circle';
+  const an = analyze(state.layout), iss = an.items[sel] || [];
+  let gapsHtml = '';
+  if (v.in){
+    const g = gaps(state.layout, sel);
+    const fmt = n => n >= 300 ? '300+' : n;
+    gapsHtml = `<div class="msg">Espaço livre até a parede ou o próximo móvel (cm):</div><div class="gaps"><div>←<b>${fmt(g.esquerda)}</b></div><div>↑<b>${fmt(g.cima)}</b></div><div>→<b>${fmt(g.direita)}</b></div><div>↓<b>${fmt(g.baixo)}</b></div></div>`;
+  }
+  box.innerHTML = `<h3>${esc(c.label)}</h3>
+    <div class="est">Medida padrão estimada: ${esc(c.est)}</div>
+    <div class="dims">
+      <label>${circ ? 'Diâmetro' : 'Largura (frente)'}<input type="number" id="inW" min="5" max="400" step="1" value="${v.w}"></label>
+      ${circ ? '' : `<label>Profundidade${c.cat === 'bed' ? ' (comprimento)' : ''}<input type="number" id="inD" min="2" max="400" step="1" value="${v.d}"></label>`}
+      <span class="msg">cm</span>
+    </div>
+    <div class="toolbar">
+      ${v.in ? '<button id="bRot">Girar 90°</button><button id="bOut">Tirar (gaveta)</button>' : '<button id="bIn" class="pri">Colocar na planta</button>'}
+      <button id="bStd">Medida padrão</button>
+    </div>
+    ${gapsHtml}
+    ${iss.length ? `<ul class="iss">${iss.map(i => `<li class="${i.lvl}">${esc(i.msg)}</li>`).join('')}</ul>` : (v.in ? '<p class="msg" style="color:var(--ok)">Cabe: sem colisão.</p>' : '<p class="msg">Está na gaveta (fora da planta).</p>')}`;
+  const inW = $('#inW'), inD = $('#inD');
+  const apply = () => {
+    const w = parseInt(inW.value, 10), d = circ ? w : parseInt(inD.value, 10);
+    if (!(w >= 5 && w <= 400) || !(d >= 2 && d <= 400)) return;
+    v.w = w; v.d = d; save(); renderItems(); refreshSelInfo();
+  };
+  inW.addEventListener('change', apply); inW.addEventListener('input', apply);
+  if (inD){ inD.addEventListener('change', apply); inD.addEventListener('input', apply); }
+  const b = id => document.getElementById(id);
+  if (b('bRot')) b('bRot').onclick = () => rotateSel();
+  if (b('bOut')) b('bOut').onclick = () => setIn(sel, false);
+  if (b('bIn')) b('bIn').onclick = () => setIn(sel, true);
+  b('bStd').onclick = () => { v.w = c.w; v.d = c.d; save(); renderAll(); };
+}
+// atualiza só folgas/avisos sem recriar os campos (para não perder o foco ao digitar)
+function refreshSelInfo(){
+  const box = $('#selPanel'); if (!sel || !box.querySelector('#inW')) return;
+  const an = analyze(state.layout), iss = an.items[sel] || [], v = state.layout[sel];
+  const old = box.querySelector('.gaps');
+  if (old && v.in){ const g = gaps(state.layout, sel), fmt = n => n >= 300 ? '300+' : n;
+    old.innerHTML = `<div>←<b>${fmt(g.esquerda)}</b></div><div>↑<b>${fmt(g.cima)}</b></div><div>→<b>${fmt(g.direita)}</b></div><div>↓<b>${fmt(g.baixo)}</b></div>`; }
+  const tail = box.querySelector('.iss, p.msg:last-child');
+  const html = iss.length ? `<ul class="iss">${iss.map(i => `<li class="${i.lvl}">${esc(i.msg)}</li>`).join('')}</ul>` : (v.in ? '<p class="msg" style="color:var(--ok)">Cabe: sem colisão.</p>' : '<p class="msg">Está na gaveta (fora da planta).</p>');
+  if (tail) tail.outerHTML = html;
+}
+function renderDrawer(){
+  const rows = CATALOG.map(c => {
+    const v = state.layout[c.id];
+    return `<div class="row"><span class="${v.in ? '' : 'out'}"><a href="#" data-pick="${c.id}">${esc(c.label)}</a></span>${v.in ? `<button data-out="${c.id}">Tirar</button>` : `<button data-in="${c.id}" class="pri">Colocar</button>`}</div>`;
+  });
+  const outN = CATALOG.filter(c => !state.layout[c.id].in).length;
+  $('#drawer').innerHTML = `<p class="msg">${outN} móvel(is) fora da planta. “Colocar” põe o móvel no centro da tela.</p>` + rows.join('');
+}
+function renderAll(){ renderItems(); renderSel(); renderDrawer(); }
+
+function setIn(id, on){
+  const v = state.layout[id];
+  if (on){
+    const f = fp(Object.assign({id}, v));
+    v.x = r1(view.x + view.w/2 - f[2]/2); v.y = r1(view.y + view.h/2 - f[3]/2);
+    if (opt.snap){ v.x = Math.round(v.x/5)*5; v.y = Math.round(v.y/5)*5; }
+    sel = id;
+  } else if (sel === id) sel = null;
+  v.in = on; save(); renderAll();
+}
+function rotateSel(){
+  if (!sel || !state.layout[sel].in) return;
+  const it = rotateItem(itemOf(sel)); const v = state.layout[sel]; v.x = it.x; v.y = it.y; v.r = it.r;
+  save(); renderItems(); renderSel();
+}
+
+// ---------- zoom e pan ----------
+function setView(v){
+  const minW = 120, maxW = 1600;
+  const k = Math.min(Math.max(v.w, minW), maxW) / v.w;
+  const cx = v.x + v.w/2, cy = v.y + v.h/2;
+  v.w *= k; v.h *= k; v.x = cx - v.w/2; v.y = cy - v.h/2;
+  view = v; svg.setAttribute('viewBox', `${v.x.toFixed(1)} ${v.y.toFixed(1)} ${v.w.toFixed(1)} ${v.h.toFixed(1)}`);
+}
+function zoomAt(factor, px, py){ // px,py em coordenadas da planta
+  setView({x: px - (px - view.x)*factor, y: py - (py - view.y)*factor, w: view.w*factor, h: view.h*factor});
+}
+function toPlan(cx, cy){
+  const m = svg.getScreenCTM(); if (!m) return {x:0, y:0};
+  const p = svg.createSVGPoint(); p.x = cx; p.y = cy; const q = p.matrixTransform(m.inverse()); return {x:q.x, y:q.y};
+}
+function fitFocus(name){ const f = FOCUS[name] || FULL; setView(Object.assign({}, f)); }
+
+// ---------- ponteiro (mouse e toque) ----------
+const ptrs = new Map();
+let drag = null, pan = null, pinch = null, lastTap = {id:null, t:0};
+svg.addEventListener('pointerdown', e => {
+  try { svg.setPointerCapture(e.pointerId); } catch(err){}
+  ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (ptrs.size === 2){
+    drag = null; pan = null;
+    const [a, b] = [...ptrs.values()];
+    pinch = {d: Math.hypot(a.x-b.x, a.y-b.y), c: toPlan((a.x+b.x)/2, (a.y+b.y)/2), v: Object.assign({}, view)};
+    return;
+  }
+  const g = e.target.closest && e.target.closest('.it');
+  if (g){
+    const id = g.dataset.id, p = toPlan(e.clientX, e.clientY), v = state.layout[id];
+    const changed = sel !== id; sel = id;
+    drag = {id, sx:p.x, sy:p.y, ox:v.x, oy:v.y, moved:false};
+    if (changed){ renderItems(); renderSel(); }
+  } else {
+    pan = {cx:e.clientX, cy:e.clientY, v:Object.assign({}, view), moved:false};
+  }
+  e.preventDefault();
+});
+svg.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (pinch && ptrs.size >= 2){
+    const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x-b.x, a.y-b.y);
+    if (d < 10) return;
+    const f = pinch.d / d, v0 = pinch.v;
+    const nv = {x: pinch.c.x - (pinch.c.x - v0.x)*f, y: pinch.c.y - (pinch.c.y - v0.y)*f, w: v0.w*f, h: v0.h*f};
+    // acompanha o deslocamento do centro da pinça
+    setView(nv);
+    const c2 = toPlan((a.x+b.x)/2, (a.y+b.y)/2);
+    setView({x: view.x + (pinch.c.x - c2.x), y: view.y + (pinch.c.y - c2.y), w: view.w, h: view.h});
+    return;
+  }
+  if (drag){
+    const p = toPlan(e.clientX, e.clientY), v = state.layout[drag.id];
+    let nx = drag.ox + (p.x - drag.sx), ny = drag.oy + (p.y - drag.sy);
+    if (Math.abs(p.x - drag.sx) + Math.abs(p.y - drag.sy) > 2) drag.moved = true;
+    if (!drag.moved) return;
+    if (opt.snap){ nx = Math.round(nx/5)*5; ny = Math.round(ny/5)*5; } else { nx = r1(nx); ny = r1(ny); }
+    if (nx !== v.x || ny !== v.y){ v.x = nx; v.y = ny; renderItems(); }
+  } else if (pan){
+    const rect = svg.getBoundingClientRect();
+    const s = Math.max(pan.v.w / rect.width, pan.v.h / rect.height);
+    const dx = (e.clientX - pan.cx) * s, dy = (e.clientY - pan.cy) * s;
+    if (Math.abs(e.clientX - pan.cx) + Math.abs(e.clientY - pan.cy) > 3) pan.moved = true;
+    setView({x: pan.v.x - dx, y: pan.v.y - dy, w: pan.v.w, h: pan.v.h});
+  }
+});
+function endPtr(e){
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (pinch){ if (ptrs.size < 2) pinch = null; return; }
+  if (drag){
+    const d = drag; drag = null;
+    if (d.moved){ save(); renderSel(); lastTap = {id:null, t:0}; }
+    else {
+      const now = Date.now();
+      if (lastTap.id === d.id && now - lastTap.t < 380){ rotateSel(); lastTap = {id:null, t:0}; }
+      else lastTap = {id:d.id, t:now};
+    }
+  } else if (pan){
+    if (!pan.moved && sel){ sel = null; renderItems(); renderSel(); }
+    pan = null;
+  }
+}
+svg.addEventListener('pointerup', endPtr);
+svg.addEventListener('pointercancel', endPtr);
+svg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const p = toPlan(e.clientX, e.clientY);
+  zoomAt(Math.exp(e.deltaY * 0.0015), p.x, p.y);
+}, {passive:false});
+svg.addEventListener('dblclick', e => e.preventDefault());
+
+// ---------- teclado ----------
+document.addEventListener('keydown', e => {
+  const tag = (e.target && e.target.tagName) || '';
+  if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
+  if (!sel || !state.layout[sel] || !state.layout[sel].in) return;
+  const v = state.layout[sel], st = e.shiftKey ? 5 : 1;
+  let used = true;
+  if (e.key === 'r' || e.key === 'R') rotateSel();
+  else if (e.key === 'Delete' || e.key === 'Backspace') setIn(sel, false);
+  else if (e.key === 'Escape'){ sel = null; renderItems(); renderSel(); }
+  else if (e.key === 'ArrowLeft') v.x -= st;
+  else if (e.key === 'ArrowRight') v.x += st;
+  else if (e.key === 'ArrowUp') v.y -= st;
+  else if (e.key === 'ArrowDown') v.y += st;
+  else used = false;
+  if (used){ e.preventDefault(); if (/Arrow/.test(e.key)){ save(); renderItems(); refreshSelInfo(); } }
+});
+
+// ---------- botões ----------
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.preset){ loadPreset(t.dataset.preset, true); if (!t.closest('.toolbar')) $('#plan').scrollIntoView({behavior:'smooth', block:'center'}); return; }
+  if (t.dataset && t.dataset.pick){ e.preventDefault(); sel = t.dataset.pick; renderItems(); renderSel(); return; }
+  if (t.dataset && t.dataset.in){ setIn(t.dataset.in, true); return; }
+  if (t.dataset && t.dataset.out){ setIn(t.dataset.out, false); return; }
+});
+$('#btnReset').onclick = () => loadPreset(state.preset, true);
+$('#optDims').onchange = e => { opt.dims = e.target.checked; renderItems(); };
+$('#optSnap').onchange = e => { opt.snap = e.target.checked; };
+$('#optPass').onchange = e => { opt.pass = e.target.checked; renderItems(); };
+$('#zIn').onclick = () => zoomAt(0.75, view.x + view.w/2, view.y + view.h/2);
+$('#zOut').onclick = () => zoomAt(1/0.75, view.x + view.w/2, view.y + view.h/2);
+$('#focus').onchange = e => fitFocus(e.target.value);
+$('#btnExport').onclick = () => {
+  const txt = JSON.stringify(state, null, 1); const ta = $('#json'); ta.value = txt;
+  const done = ok => { $('#ioMsg').textContent = ok ? 'JSON copiado. Cole num lugar seguro (notas, e-mail para você mesmo).' : 'Selecione o texto acima e copie.'; };
+  try { navigator.clipboard.writeText(txt).then(() => done(true), () => { ta.select(); done(false); }); }
+  catch(err){ ta.select(); done(false); }
+};
+$('#btnImport').onclick = () => {
+  let v = null;
+  try { v = validateState(JSON.parse($('#json').value)); } catch(err){ v = null; }
+  if (!v){ $('#ioMsg').textContent = 'Não reconheci o texto. Cole o JSON exportado por esta página.'; return; }
+  state = v; sel = null; save(); renderAll(); $('#ioMsg').textContent = 'Layout importado.';
+};
+$('#btnDimsReset').onclick = () => { for (const c of CATALOG){ state.layout[c.id].w = c.w; state.layout[c.id].d = c.d; } save(); renderAll(); };
+
+// tabela de estimativas
+$('#estTable tbody').innerHTML = CATALOG.map(c => `<tr><td>${esc(c.label)}</td><td>${esc(c.est)}</td><td class="est">estimativa</td></tr>`).join('') +
+  FIXED.map(f => `<tr><td>${esc(f.label)}</td><td>${f.rect[2]}×${f.rect[3]} (desenhada na planta)</td><td></td></tr>`).join('');
+
+// ---------- início ----------
+drawStatic();
+state = load();
+if (!state){ state = {preset:'C', layout:buildLayout('C', {})}; }
+save();
+renderAll();
+document.querySelectorAll('.toolbar [data-preset]').forEach(b => b.classList.toggle('on', b.dataset.preset === state.preset));
+if (window.matchMedia && window.matchMedia('(max-width: 600px)').matches){ fitFocus('sala'); $('#focus').value = 'sala'; }
+})();
+/*APP-END*/
+</script>
+</body>
+</html>
