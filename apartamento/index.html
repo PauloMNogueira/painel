@@ -141,6 +141,7 @@ th,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertic
     <button data-preset="Z" title="Apartamento vazio: todos os móveis na gaveta">Zerado</button>
     <button data-preset="S1" title="Layout montado à mão">Sugestão 1</button>
     <button data-preset="S1VIK" title="Sugestão 1 com a cozinha compacta Vik 180 cm (Madesa)">Sugestão 1 + Cozinha Vik</button>
+    <button data-preset="S1ARM" title="Sugestão 1 com a cozinha reorganizada para guardar mais (estudo)">Sugestão 1 + Cozinha com armazenamento</button>
     <button id="btnShare" title="Gera um link com este layout">Compartilhar</button>
     <button id="btnReset" title="Volta as posições da proposta atual (mantém as medidas que você digitou)">Resetar</button>
   </div>
@@ -609,6 +610,24 @@ MODELS.s1vik = {label:'Sugestão 1 + Cozinha Vik', state:(() => {
   return st;
 })()};
 PRESET_IDS.push('S1VIK');
+// Sugestão 1 + cozinha com armazenamento (estudo): parte do s1vik.
+// Itens "(comprar)" são medidas-alvo, não produtos; o gabinete Vik fica na gaveta até conferir se a bancada da obra é suspensa.
+MODELS.s1arm = {label:'Sugestão 1 + Cozinha com armazenamento', state:(() => {
+  const st = JSON.parse(JSON.stringify(MODELS.s1vik.state)), L = st.layout;
+  L.novo_vikpia.in = false; L.novo_vikpia.nome = 'Vik · Gabinete sob bancada (vistoria)';
+  L.novo_vikb60.in = false;                                   // 52 cm de fundo deixava só 48 cm de corredor
+  L.fogao.y = 29;                                             // fogão encostado na bancada; libera 29 cm no canto
+  Object.assign(L.armp1, {x:-47, y:89, r:90, in:true, apoio:'chao', z:0});              // parede oposta, fora do giro da porta
+  Object.assign(L.armp2, {x:-47, y:89, r:90, in:true, apoio:'sobre', base:'armp1', z:0, rel:{ox:0, oy:0, dr:0}}); // empilhado
+  Object.assign(L, {
+    novo_coluna:{x:-172, y:0, r:270, w:25, d:55, h:220, apoio:'chao', z:0, in:true, custom:true, nome:'Coluna estreita 25×55×220 (comprar)', tipo:'alto'},
+    novo_aerfogao:{x:-172, y:29, r:270, w:50, d:31, h:33, apoio:'parede', z:192, in:true, custom:true, nome:'Aéreo sobre o fogão 50×31×33 (comprar)', tipo:'aereo'},
+    novo_aerporta:{x:-100, y:0, r:0, w:70, d:31, h:33, apoio:'parede', z:215, in:true, custom:true, nome:'Aéreo sobre a porta 70×31×33 (comprar)', tipo:'aereo'},
+    novo_armarea:{x:-172, y:-88, r:270, w:70, d:30, h:180, apoio:'chao', z:0, in:true, custom:true, nome:'Armário de área 70×30×180 (comprar)', tipo:'alto'},
+  });
+  return st;
+})()};
+PRESET_IDS.push('S1ARM');
 function modelState(key){ const m = MODELS[key]; if (!m) return null; const v = validateState(JSON.parse(JSON.stringify(m.state))); if (v) v.preset = key.toUpperCase(); return v; }
 // ---------- link compartilhável: layout no hash (#l=...), JSON compacto em base64url ----------
 const LKEYS = ['x','y','r','w','d','h','apoio','z','in','base','rel','withBase','custom','nome','tipo'];
