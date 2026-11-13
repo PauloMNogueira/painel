@@ -142,6 +142,7 @@ th,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertic
     <button data-preset="S1" title="Layout montado à mão">Sugestão 1</button>
     <button data-preset="S1VIK" title="Sugestão 1 com a cozinha compacta Vik 180 cm (Madesa)">Sugestão 1 + Cozinha Vik</button>
     <button data-preset="S1ARM" title="Sugestão 1 com a cozinha reorganizada para guardar mais (estudo)">Sugestão 1 + Cozinha com armazenamento</button>
+    <button data-preset="S2" title="Seu layout com as medidas reais (13/11)">Sugestão 2 (medidas reais)</button>
     <button id="btnShare" title="Gera um link com este layout">Compartilhar</button>
     <button id="btnReset" title="Volta as posições da proposta atual (mantém as medidas que você digitou)">Resetar</button>
   </div>
@@ -247,26 +248,26 @@ const PASSAGES = [
 ];
 // medidas = ESTIMATIVAS de mercado (w = largura/frente, d = profundidade). clear = área de uso na frente.
 const CATALOG = [
-  {id:'queen', label:'Cama queen', short:'Queen', w:158, d:198, clear:0, cat:'bed', est:'158×198 (box padrão; com cabeceira pode passar de 205)'},
-  {id:'solteiro', label:'Cama de solteiro (filho)', short:'Cama filho', w:88, d:188, clear:0, cat:'bed', est:'88×188'},
-  {id:'arara', label:'Arara', short:'Arara', w:100, d:45, clear:40, cat:'store', est:'100×45 (+40 para pegar roupa)'},
-  {id:'armario2p', label:'Armário 2 portas', short:'Armário 2p', w:80, d:50, clear:40, cat:'store', est:'80×50 (+40 de giro das portas)'},
-  {id:'comoda', label:'Cômoda', short:'Cômoda', w:100, d:45, clear:40, cat:'store', est:'100×45 (+40 das gavetas)'},
-  {id:'armp1', label:'Armário pequeno 1', short:'Arm. peq.', w:60, d:35, clear:25, cat:'kitchen', est:'60×35 (assumi de chão)'},
-  {id:'armp2', label:'Armário pequeno 2', short:'Arm. peq.', w:60, d:35, clear:25, cat:'kitchen', est:'60×35 (assumi de chão)'},
-  {id:'estcoz', label:'Estante de madeira aberta (cozinha)', short:'Estante', w:80, d:30, clear:0, cat:'kitchen', est:'80×30'},
-  {id:'geladeira', label:'Geladeira', short:'Geladeira', w:60, d:70, clear:60, cat:'kitchen', est:'60×70 (+60 da porta)'},
-  {id:'fogao', label:'Fogão 4 bocas', short:'Fogão', w:50, d:60, clear:50, cat:'kitchen', est:'50×60 (+50 do forno)'},
-  {id:'mesared', label:'Mesa redonda', short:'Mesa', w:90, d:90, clear:0, cat:'table', shape:'circle', est:'Ø90'},
+  {id:'queen', label:'Cama queen', short:'Queen', w:158, d:198, clear:0, cat:'bed', est:'158×198×50 (medido)'},
+  {id:'solteiro', label:'Cama de solteiro (filho)', short:'Cama filho', w:87, d:170, clear:0, cat:'bed', est:'87×170×45 (medido)'},
+  {id:'arara', label:'Arara', short:'Arara', w:100, d:45, clear:40, cat:'store', est:'100×45×160 (medido)'},
+  {id:'armario2p', label:'Armário 2 portas', short:'Armário 2p', w:160, d:50, clear:40, cat:'store', est:'160×50×180 (medido)'},
+  {id:'comoda', label:'Cômoda', short:'Cômoda', w:160, d:50, clear:40, cat:'store', est:'160×50×85 (medido)'},
+  {id:'armp1', label:'Armário pequeno 1', short:'Arm. peq.', w:90, d:28, clear:25, cat:'kitchen', est:'90×28×85 (medido)'},
+  {id:'armp2', label:'Armário pequeno 2', short:'Arm. peq.', w:60, d:35, clear:25, cat:'kitchen', est:'60×35×85 (medido)'},
+  {id:'estcoz', label:'Estante de madeira aberta (cozinha)', short:'Estante', w:60, d:35, clear:0, cat:'kitchen', est:'60×35×180 (medido)'},
+  {id:'geladeira', label:'Geladeira', short:'Geladeira', w:60, d:65, clear:60, cat:'kitchen', est:'60×65×170 (medido)'},
+  {id:'fogao', label:'Fogão 4 bocas', short:'Fogão', w:50, d:50, clear:50, cat:'kitchen', est:'50×50×85 (medido)'},
+  {id:'mesared', label:'Mesa redonda', short:'Mesa', w:100, d:100, clear:0, cat:'table', shape:'circle', est:'Ø100 (medido)'},
   {id:'cad1', label:'Cadeira 1 (mesa redonda)', short:'Cad.', w:45, d:45, clear:0, cat:'seat', kind:'chair', est:'45×45'},
   {id:'cad2', label:'Cadeira 2 (mesa redonda)', short:'Cad.', w:45, d:45, clear:0, cat:'seat', kind:'chair', est:'45×45'},
   {id:'cad3', label:'Cadeira 3 (mesa redonda)', short:'Cad.', w:45, d:45, clear:0, cat:'seat', kind:'chair', est:'45×45'},
-  {id:'sofa', label:'Sofá 2 lugares', short:'Sofá', w:180, d:85, clear:0, cat:'seat', est:'180×85'},
-  {id:'rack', label:'Rack', short:'Rack', w:140, d:40, clear:0, cat:'store', est:'140×40'},
-  {id:'estliv', label:'Estante de livros', short:'Livros', w:80, d:30, clear:0, cat:'store', est:'80×30'},
-  {id:'discos', label:'Móvel de discos', short:'Discos', w:80, d:40, clear:0, cat:'store', est:'80×40'},
-  {id:'mesatrab', label:'Mesa de trabalho', short:'Mesa trab.', w:120, d:60, clear:80, cat:'table', est:'120×60 (+80 para a cadeira)'},
-  {id:'cadtrab', label:'Cadeira de trabalho', short:'Cad.', w:60, d:60, clear:0, cat:'seat', kind:'chair', est:'60×60'},
+  {id:'sofa', label:'Sofá 2 lugares', short:'Sofá', w:170, d:86, clear:0, cat:'seat', est:'170×86×85 (medido)'},
+  {id:'rack', label:'Rack', short:'Rack', w:160, d:32, clear:0, cat:'store', est:'160×32×50 (medido)'},
+  {id:'estliv', label:'Estante de livros', short:'Livros', w:60, d:30, clear:0, cat:'store', est:'60×30×180 (medido)'},
+  {id:'discos', label:'Móvel de discos', short:'Discos', w:91, d:30, clear:0, cat:'store', est:'91×30×80 (medido)'},
+  {id:'mesatrab', label:'Mesa de trabalho', short:'Mesa trab.', w:125, d:65, clear:80, cat:'table', est:'125×65×75 (medido)'},
+  {id:'cadtrab', label:'Cadeira de trabalho', short:'Cad.', w:60, d:70, clear:0, cat:'seat', kind:'chair', est:'60×70×100 (medido)'},
   {id:'guardaroupa', label:'Guarda-roupa do casal (FUTURO)', short:'Guarda-roupa (futuro)', w:220, d:55, clear:60, cat:'future', est:'220×55, portas de correr (a comprar)'},
   {id:'tvsu', label:'TV extra (na parede ou sobre um móvel)', short:'TV extra', w:112, d:8, clear:0, cat:'tv', apoio:'parede', z:100, est:'~112 de largura × 65 de altura (TV de 50"), na parede a 1,00 m'},
 ];
@@ -628,6 +629,9 @@ MODELS.s1arm = {label:'Sugestão 1 + Cozinha com armazenamento', state:(() => {
   return st;
 })()};
 PRESET_IDS.push('S1ARM');
+// Sugestão 2: layout do dono com as medidas reais (trena, 13/11).
+MODELS.s2 = {label:'Sugestão 2 (medidas reais)', state:{"preset":"Z","layout":{"queen":{"x":0,"y":0,"r":0,"w":158,"d":198,"in":false,"h":50,"apoio":"chao","z":0},"solteiro":{"x":255,"y":335,"r":180,"w":87,"d":170,"in":true,"h":45,"apoio":"chao","z":0},"arara":{"x":0,"y":0,"r":0,"w":100,"d":45,"in":false,"h":160,"apoio":"chao","z":0},"armario2p":{"x":0,"y":0,"r":0,"w":160,"d":50,"in":false,"h":180,"apoio":"chao","z":0},"comoda":{"x":455,"y":345,"r":90,"w":160,"d":50,"in":true,"h":85,"apoio":"chao","z":0},"armp1":{"x":-40,"y":80,"r":90,"w":90,"d":28,"in":true,"h":85,"apoio":"chao","z":0},"armp2":{"x":0,"y":0,"r":0,"w":60,"d":35,"in":false,"h":85,"apoio":"chao","z":0},"estcoz":{"x":0,"y":0,"r":180,"w":60,"d":35,"in":true,"h":180,"apoio":"chao","z":0},"geladeira":{"x":-170,"y":205,"r":270,"w":60,"d":65,"in":true,"h":170,"apoio":"chao","z":0},"fogao":{"x":-170,"y":25,"r":270,"w":50,"d":50,"in":true,"h":85,"apoio":"chao","z":0},"mesared":{"x":-20,"y":-150,"r":0,"w":100,"d":100,"in":false,"h":75,"apoio":"chao","z":0},"cad1":{"x":0,"y":0,"r":0,"w":45,"d":45,"in":false,"h":90,"apoio":"chao","z":0},"cad2":{"x":0,"y":0,"r":0,"w":45,"d":45,"in":false,"h":90,"apoio":"chao","z":0},"cad3":{"x":0,"y":0,"r":0,"w":45,"d":45,"in":false,"h":90,"apoio":"chao","z":0},"sofa":{"x":70,"y":210,"r":0,"w":170,"d":86,"in":true,"h":85,"apoio":"chao","z":0},"rack":{"x":75,"y":370,"r":180,"w":160,"d":32,"in":true,"h":50,"apoio":"chao","z":0},"estliv":{"x":180,"y":0,"r":180,"w":60,"d":30,"in":true,"h":180,"apoio":"chao","z":0},"discos":{"x":145,"y":180,"r":0,"w":91,"d":30,"in":true,"h":80,"apoio":"chao","z":0},"mesatrab":{"x":440,"y":195,"r":90,"w":125,"d":65,"in":true,"h":75,"apoio":"chao","z":0},"cadtrab":{"x":380,"y":215,"r":90,"w":60,"d":70,"in":true,"h":100,"apoio":"chao","z":0},"guardaroupa":{"x":0,"y":0,"r":0,"w":220,"d":55,"in":false,"h":220,"apoio":"chao","z":0},"tvsu":{"x":0,"y":0,"r":0,"w":112,"d":8,"in":false,"h":65,"apoio":"parede","z":100},"novo_bmcul1x1":{"x":105,"y":390,"r":0,"w":93,"d":13,"in":false,"custom":true,"nome":"TV Sala","tipo":"tv","h":65,"apoio":"parede","z":100},"novo_n8cy08ih":{"x":-90,"y":285,"r":180,"w":87,"d":27,"in":true,"custom":true,"nome":"Piano","tipo":"mesa","h":100,"apoio":"chao","z":0},"novo_r52cknxd":{"x":200,"y":-155,"r":90,"w":137,"d":40,"in":false,"custom":true,"nome":"Pia + Churrasqueira","tipo":"cozinha","h":90,"apoio":"chao","z":0},"novo_o0a0we30":{"x":-40,"y":85,"r":90,"w":30,"d":26,"in":true,"custom":true,"nome":"AirFryer","tipo":"objeto","h":30,"apoio":"sobre","z":0,"base":"armp1","rel":{"ox":-25,"oy":1,"dr":0}},"novo_8q1r06qd":{"x":-40,"y":125,"r":90,"w":24,"d":24,"in":true,"custom":true,"nome":"Panela Arroz","tipo":"baixo","h":23,"apoio":"sobre","z":0,"base":"armp1","rel":{"ox":12,"oy":2,"dr":0}}}}};
+PRESET_IDS.push('S2');
 function modelState(key){ const m = MODELS[key]; if (!m) return null; const v = validateState(JSON.parse(JSON.stringify(m.state))); if (v) v.preset = key.toUpperCase(); return v; }
 // ---------- link compartilhável: layout no hash (#l=...), JSON compacto em base64url ----------
 const LKEYS = ['x','y','r','w','d','h','apoio','z','in','base','rel','withBase','custom','nome','tipo'];
