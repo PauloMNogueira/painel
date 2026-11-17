@@ -73,7 +73,7 @@ textarea{width:100%;min-height:90px;font:12px/1.3 ui-monospace,Menlo,monospace;c
 <div id="help">Arraste para girar · pinça para zoom · dois dedos para mover</div>
 <aside id="panel" aria-label="Ajustes">
   <h2>Ajustes <button class="btn" id="bClose" aria-label="Fechar">✕</button></h2>
-  <p class="small">📐 Todas as alturas são estimativas (a planta só tem medidas no chão). Mude aqui se souber a real. Portas, esquadrias, bancada e louças estão na posição da planta, mas o modelo de cada uma é estimativa.</p>
+  <p class="small">📐 Todas as alturas são estimativas (a planta só tem medidas no chão). Mude aqui se souber a real.</p>
   <div class="row"><span>Pé-direito</span><input type="range" id="rH" min="230" max="300" step="5"><output id="oH"></output></div>
   <div class="row"><span>Altura das portas</span><input type="range" id="rD" min="190" max="230" step="5"><output id="oD"></output></div>
   <div class="row"><span>Peitoril das janelas</span><input type="range" id="rS" min="60" max="150" step="5"><output id="oS"></output></div>
@@ -846,104 +846,6 @@ function addBoxes(group, list, material, cast, recv, o){
 
 const FLOORC = {sala:0xd8c7a8, hall:0xd8c7a8, circ:0xd8c7a8, q01:0xcdb48f, q02:0xc9b79a, cozinha:0xcfd4d8, banho:0xc4d0d6, varanda:0xbfc3b8};
 const WETFLOOR = {cozinha:tile60, banho:tile60, varanda:tile45};
-
-// ---------- detalhes de obra: portas, esquadrias, bancada, tanque e louças do banho ----------
-// A POSIÇÃO vem da planta; o MODELO de cada peça (cor, puxador, tipo de esquadria, cuba, louça) é estimativa.
-const BATH = { // banho: vaso e lavatório na parede da direita, chuveiro no fundo (lido do desenho da planta)
-  vaso:{x:334, y:-50}, lav:{x:350, y:23}, boxY:-79, chuv:{x:350, y:-134},
-};
-const DETAIL_AO = [[313,-68,59,36], [344,15,16,16]]; // pegadas que escurecem o piso
-// caixa com um furo retangular no tampo (cuba): devolve as 4 peças em volta do furo
-function ringBoxes(r, hole, y0, y1){
-  const [x, y, w, d] = r, [hx, hy, hw, hd] = hole;
-  return [[x, y, hx - x, d, y0, y1], [hx + hw, y, x + w - hx - hw, d, y0, y1], [hx, y, hw, hy - y, y0, y1], [hx, hy + hd, hw, y + d - hy - hd, y0, y1]];
-}
-function buildDetails(low, H, door, sill, top){
-  const white = [], alu = [], chrome = [], ceramic = [], stone = [], inox = [], glass = [], plate = [];
-  const whiteM = mat(0xf4f3ef, {roughness:0.45, envMapIntensity:0.7});
-  const ceramicM = mat(0xfbfbf9, {roughness:0.15, envMapIntensity:1});
-  const chromeM = mat(0xe4e6e8, {roughness:0.3, metalness:0.55, envMapIntensity:1.3});
-  const cyl = (cx, cy, rx, ry, y0, y1, m) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 28), m); me.scale.set(rx*M, (y1-y0)*M, ry*M); me.position.set(cx*M, (y0+y1)/2*M, cy*M); me.castShadow = me.receiveShadow = true; archGroup.add(me); };
-
-  // bancada da cozinha (encostada na parede da esquerda): corpo branco, tampo de pedra, cuba de inox e torneira
-  const pia = FIXED.find(f => f.id === 'pia');
-  if (pia){
-    const r = pia.rect, h = 90, hole = [r[0]+14, r[1]+r[3]/2-23, 34, 46];
-    white.push(...ringBoxes([r[0], r[1], r[2]-2, r[3]], hole, 0, h-4));
-    stone.push(...ringBoxes(r, hole, h-4, h));
-    inox.push([hole[0], hole[1], hole[2], hole[3], h-20, h-19.5]);
-    chrome.push([r[0]+6, r[1]+r[3]/2-1.25, 2.5, 2.5, h, h+22], [r[0]+6, r[1]+r[3]/2-1.25, 17, 2.5, h+20, h+22]);
-  }
-  // tanque da varanda: louça com cuba funda e torneira de parede
-  const tq = FIXED.find(f => f.id === 'tanque');
-  if (tq){
-    const r = tq.rect, h = 85, hole = [r[0]+7, r[1]+8, r[2]-13, r[3]-16];
-    ceramic.push(...ringBoxes(r, hole, h-28, h), [hole[0], hole[1], hole[2], hole[3], h-28, h-27], [r[0]+r[2]/2-9, r[1]+r[3]/2-9, 18, 18, 0, h-28]);
-    chrome.push([r[0], r[1]+r[3]/2-1.5, 10, 3, h+14, h+17]);
-  }
-  // banho: vaso com caixa acoplada, lavatório de coluna
-  cyl(BATH.vaso.x, BATH.vaso.y, 21, 18, 0, 40, ceramicM);
-  cyl(BATH.vaso.x, BATH.vaso.y, 21.5, 18.5, 40, 42, mat(0xeeeeea, {roughness:0.3}));
-  ceramic.push([354, BATH.vaso.y-18, 18, 36, 38, 78]);
-  chrome.push([361, BATH.vaso.y-2, 4, 4, 78, 78.6]);
-  ceramic.push([BATH.lav.x-6, BATH.lav.y-6, 12, 12, 0, 72]);
-  cyl(BATH.lav.x, BATH.lav.y, 22, 19, 72, 86, ceramicM);
-  cyl(BATH.lav.x-1, BATH.lav.y, 16, 13, 86, 86.3, mat(0xd4d8d8, {roughness:0.12, envMapIntensity:1}));
-  chrome.push([365, BATH.lav.y-1.5, 3, 3, 86, 98], [354, BATH.lav.y-1.25, 13, 2.5, 96, 98]);
-
-  if (!low){
-    // portas de abrir: batente, folha e maçaneta. A de entrada fica fechada; as outras, abertas como na planta.
-    const TH = 4;
-    for (const d of DOORS){
-      const g = d.gap, gh = g[2] > g[3];
-      if (gh) white.push([g[0], g[1]-1, 3, g[3]+2, 0, door], [g[0]+g[2]-3, g[1]-1, 3, g[3]+2, 0, door], [g[0], g[1]-1, g[2], g[3]+2, door-3, door]);
-      else white.push([g[0]-1, g[1], g[2]+2, 3, 0, door], [g[0]-1, g[1]+g[3]-3, g[2]+2, 3, 0, door], [g[0]-1, g[1], g[2]+2, g[3], door-3, door]);
-      const closed = d.id === 'entrada', tip = closed ? d.closed : d.open;
-      const ax = tip[1] === d.h[1]; // folha ao longo de x?
-      const B = (u, v, du, dv, a, b) => ax ? [u, v, du, dv, a, b] : [v, u, dv, du, a, b];
-      const hu = ax ? d.h[0] : d.h[1], tu = ax ? tip[0] : tip[1], hv = ax ? d.h[1] : d.h[0], s = Math.sign(tu - hu) || 1;
-      const q = ax ? d.sy : d.sx; // lado para onde a porta gira
-      const v0 = closed ? (ax ? g[1] + g[3]/2 : g[0] + g[2]/2) - TH/2 : (q > 0 ? hv : hv - TH);
-      const pad = closed ? 3 : 0;
-      white.push(B(Math.min(hu, tu) + pad, v0, Math.abs(tu - hu) - 2*pad, TH, 0.8, door - 3.5));
-      const up = tu - s*(7 + pad);
-      chrome.push(B(up - 1, v0 - 4, 2, TH + 8, 100, 102), B(Math.min(up, up - s*11), v0 - 4.5, 11, 1.5, 100, 102), B(Math.min(up, up - s*11), v0 + TH + 3, 11, 1.5, 100, 102));
-      // interruptor ao lado do trinco, do lado para onde a porta abre (só se houver parede ali)
-      const hw = gh ? d.h[0] : d.h[1], cw = gh ? d.closed[0] : d.closed[1], f = gh ? d.h[1] : d.h[0], qs = gh ? d.sy : d.sx;
-      const pu = cw + (Math.sign(cw - hw) || 1)*16, at = (u, v) => gh ? cellAt(u, v) : cellAt(v, u);
-      if (at(pu, f - qs*4) === T.WALL && at(pu - 4, f + qs*4) === T.FLOOR && at(pu + 4, f + qs*4) === T.FLOOR){
-        const pv = qs > 0 ? f : f - 0.7; plate.push(gh ? [pu - 4, pv, 8, 0.7, 104, 116] : [pv, pu - 4, 0.7, 8, 104, 116]);
-      }
-    }
-    // esquadrias de alumínio: quadro e montante central
-    const frame = (r, y0, y1, mull, floor) => {
-      const hz = r[2] > r[3], P = 4, D = 7, pb = floor ? 1.5 : P;
-      const B = (u, v, du, dv, a, b) => hz ? [u, v, du, dv, a, b] : [v, u, dv, du, a, b];
-      const u0 = hz ? r[0] : r[1], len = hz ? r[2] : r[3], v0 = (hz ? r[1] + r[3]/2 : r[0] + r[2]/2) - D/2;
-      alu.push(B(u0, v0, len, D, y0, y0 + pb), B(u0, v0, len, D, y1 - P, y1), B(u0, v0, P, D, y0, y1), B(u0 + len - P, v0, P, D, y0, y1));
-      if (mull) alu.push(B(u0 + len/2 - P/2, v0, P, D, y0, y1));
-    };
-    if (top - sill > 12){ frame(WINDOWS[0], sill, Math.min(top, H), true); frame(WINDOWS[1], sill, Math.min(top, H), true); }
-    if (H >= 210) frame(WINDOWS[2], 160, 210, false);
-    frame(SLIDING.gap, 0, Math.min(door, H), true, true);
-    // folha de correr aberta, recolhida atrás da folha fixa
-    glass.push([63, -5, 56, 1.2, 4, Math.min(door, H) - 4]);
-    alu.push([60, -5.6, 3, 2.4, 0, Math.min(door, H)], [118, -5.6, 3, 2.4, 0, Math.min(door, H)]);
-    // box do chuveiro: folha fixa + folha de correr aberta, trilho em cima
-    glass.push([312, BATH.boxY, 60, 1.2, 0, 190], [314, BATH.boxY + 2.5, 56, 1.2, 0, 190]);
-    alu.push([252, BATH.boxY - 0.6, 120, 4.6, 190, 193]);
-    chrome.push([BATH.chuv.x - 1.25, -158, 2.5, 24, 203, 205.5]);
-    cyl(BATH.chuv.x, BATH.chuv.y, 9, 9, 199, 201.5, chromeM);
-  }
-  addBoxes(archGroup, white, whiteM, true, true);
-  addBoxes(archGroup, plate, mat(0xfdfdfd, {roughness:0.35}), false, false);
-  addBoxes(archGroup, alu, mat(0xbfc3c8, {roughness:0.35, metalness:0.7, envMapIntensity:1}), true, true);
-  addBoxes(archGroup, chrome, chromeM, true, false);
-  addBoxes(archGroup, ceramic, ceramicM, true, true);
-  addBoxes(archGroup, stone, mat(0x303134, {roughness:0.28, envMapIntensity:0.9}), true, true);
-  addBoxes(archGroup, inox, mat(0xaeb3b8, {roughness:0.3, metalness:0.9, envMapIntensity:1}), false, true);
-  addBoxes(archGroup, glass, mat(0xbfe0ee, {transparent:true, opacity:0.2, roughness:0.05, depthWrite:false, envMapIntensity:1.2}), false, false);
-}
 let walkMode = false;
 function buildArch(){
   disposeGroup(archGroup); disposeGroup(ceilGroup);
@@ -970,8 +872,7 @@ function buildArch(){
   RECTS[T.RAIL].forEach(r => glass.push([r[0], r[1], r[2], r[3], 0, 105]));
   addBoxes(archGroup, glass, glassM, false, false);
   const railTop = []; RECTS[T.RAIL].forEach(r => railTop.push([r[0], r[1]-1, r[2], r[3]+2, 105, 110]));
-  if (low) railTop.push([60, -10, 2, 4, 0, Math.min(door, H)], [121, -10, 2, 4, 0, Math.min(door, H)]); // montantes da porta de correr
-  buildDetails(low, H, door, sill, top);
+  railTop.push([60, -10, 2, 4, 0, Math.min(door, H)], [121, -10, 2, 4, 0, Math.min(door, H)]); // montantes da porta de correr
   addBoxes(archGroup, railTop, mat(0x6b7078, {roughness:0.5, metalness:0.3}), true, false);
   // pisos
   for (const r of ROOMS){
@@ -1048,7 +949,9 @@ function buildFurniture(){
   for (const it of items){
     if (it.fixed){
       const r = it.fixed.rect, h = it.fixed.id === 'pia' ? 90 : 85;
-      continue; // pia e tanque agora são desenhados em buildDetails (junto com a obra)
+      push(0xe6e6e6, [r[0], r[1], r[2], r[3], 0, h]);
+      push(0x9aa3ab, [r[0]+8, r[1]+10, r[2]-16, Math.min(40, r[3]-20), h, h+0.5]);
+      continue;
     }
     const c = CAT[it.id], s = HSPEC[it.id] || (c.custom ? (CUSTOM_CATS[c.tipo] || CUSTOM_CATS.outro).spec : {box:true}), f = fp(it), col = (walkMode ? REALCOL : CATCOL)[c.cat] || 0xbbbbbb;
     const band = itemBand(L, it.id), y0 = band[0], H = Math.max(1, band[1] - band[0]);
@@ -1104,7 +1007,7 @@ function buildFurniture(){
   // na visita os móveis ganham veio/trama e escurecem junto ao chão; na maquete continuam com a cor da categoria
   for (const {color, extra, list} of byMat.values()) addBoxes(furGroup, list, mat(color, Object.assign(walkMode && !(extra && extra.transparent) ? {map:grainTex, aoMap:gradOpen, roughness:0.72} : {}, extra || {})), !(extra && extra.transparent), true);
   if (walkMode) furGroup.traverse(o => { if (o.isMesh && !o.material.map && !o.material.transparent){ o.material.map = grainTex; o.material.needsUpdate = true; } });
-  updateFloorAO(contact.concat(FIXED.map(f => f.rect), DETAIL_AO));
+  updateFloorAO(contact.concat(FIXED.map(f => f.rect)));
   renderer.shadowMap.needsUpdate = true;
   for (const l of labels){ const sp = labelSprite(l.text); sp.position.set(l.x*M, l.y*M, l.z*M); labelGroup.add(sp); }
   labelGroup.visible = OPT.labels && !walkMode;
@@ -1171,7 +1074,6 @@ let flashT = 0; function flash(t){ const h = $('#help'); h.textContent = t; h.st
 
 // ---------- colisão (modo visita) ----------
 const RAD = 18;
-const ENTRY = DOORS.find(d => d.id === 'entrada').gap;
 let furBoxes = [];
 function refreshFurBoxes(){
   furBoxes = !layoutState ? [] : placedIds(layoutState.layout).filter(id => !CAT[id].nocollide && itemBand(layoutState.layout, id)[0] < 150).map(id => fp({id, ...layoutState.layout[id]})).concat(FIXED.map(f => f.rect));
@@ -1179,7 +1081,6 @@ function refreshFurBoxes(){
 function pointFree(x, y){
   const t = cellAt(x, y);
   if (!(t === T.FLOOR || t === T.DOOR || t === T.OPEN || (t === T.SLIDE && x >= 122))) return false;
-  if (x >= ENTRY[0] && x <= ENTRY[0]+ENTRY[2] && y >= ENTRY[1]+3 && y <= ENTRY[1]+ENTRY[3]) return false; // porta de entrada fechada
   if (OPT.furBlock) for (const b of furBoxes) if (x > b[0] && x < b[0]+b[2] && y > b[1] && y < b[1]+b[3]) return false;
   return true;
 }
