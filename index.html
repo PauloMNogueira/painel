@@ -203,7 +203,7 @@ nav.abas button[aria-current="page"] { color: var(--accent-ink); font-weight: 60
 .grade-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .prev { font-size: 15px; color: var(--text-2); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
 .prev b { color: var(--text); }
-.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: 10px; padding: 3px; }
+.seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); background: var(--surface-2); border-radius: 10px; padding: 3px; }
 .seg button { border: 0; background: none; padding: 8px; border-radius: 8px; font-size: 14px; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--surface); font-weight: 600; box-shadow: var(--shadow); }
 .dois { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -256,6 +256,7 @@ footer.rod { color: var(--text-3); font-size: 13px; text-align: center; padding:
     <div class="seg" role="group" aria-label="Tipo">
       <button type="button" data-tipo="gasto" aria-pressed="true">Gasto</button>
       <button type="button" data-tipo="saldo" aria-pressed="false">Saldo do VR</button>
+      <button type="button" data-tipo="mover" aria-pressed="false">Mover</button>
     </div>
     <h3 id="h-lancar">Novo gasto</h3>
     <input id="l-valor" class="valor-in num" inputmode="decimal" placeholder="R$ 0,00" autocomplete="off">
@@ -263,6 +264,10 @@ footer.rod { color: var(--text-3); font-size: 13px; text-align: center; padding:
       <div><div class="rot">No quê?</div><div class="grade-chips" id="l-cats"></div></div>
       <div><div class="rot">Pagou com</div><div class="grade-chips" id="l-formas"></div></div>
       <input id="l-desc" type="text" placeholder="Descrição (opcional)" maxlength="60" autocomplete="off">
+    </div>
+    <div id="l-bloco-mover" style="display:none;gap:14px">
+      <div><div class="rot">Tirar de</div><div class="grade-chips" id="l-de"></div></div>
+      <div><div class="rot">Colocar em</div><div class="grade-chips" id="l-para"></div></div>
     </div>
     <input id="l-data" type="date">
     <div class="prev" id="l-prev" aria-live="polite"></div>
@@ -376,12 +381,18 @@ function limparSincronizados() {
 /* ---------------- envelopes (mesma conta do motor.py) ---------------- */
 function lancsEnvelope(extra) {
   const base = (D.env_lancs || []).map((l) => ({ ...l }));
-  pendentes().forEach((p, i) => base.push({
+  const doMover = (id, seq, data, valor, de, para) => {
+    base.push({ id: id + ":de", seq, data, valor, envelope: de, mover: true });
+    base.push({ id, seq, data, valor: -valor, envelope: para, mover: true });
+  };
+  pendentes().filter((p) => p.categoria === "mover").forEach((p, i) => { const [de, para] = p.forma.split(">"); doMover(p.id, 1e9 + i, p.data, p.valor, de, para); });
+  pendentes().filter((p) => p.categoria !== "mover").forEach((p, i) => base.push({
     id: p.id, seq: 1e9 + i, data: p.data, valor: p.valor,
     envelope: p.categoria === "saldo_vr" ? "vr" : envDaCat(p.categoria, p.forma),
     saldo_vr: p.categoria === "saldo_vr",
   }));
-  if (extra) base.push({ id: "_sim", seq: 2e9, ...extra });
+  if (extra && extra.mover) doMover("_sim", 2e9, extra.data, extra.valor, extra.de, extra.para);
+  else if (extra) base.push({ id: "_sim", seq: 2e9, ...extra });
   return base;
 }
 
@@ -396,7 +407,7 @@ function calcularEnvelopes(hoje, extra) {
       const [hy, hm] = hoje.split("-").map(Number), [py, pm] = D.inicio_painel.split("-").map(Number);
       orc = env.mensal * ((hy - py) * 12 + hm - pm + 1); desde = inicioPainel;
     }
-    const doEnv = lancs.filter((l) => l.envelope === env.id && !l.saldo_vr && l.valor > 0);
+    const doEnv = lancs.filter((l) => l.envelope === env.id && !l.saldo_vr && (l.valor > 0 || l.mover));
     let gasto = doEnv.filter((l) => { const d = dn(l.data); return d >= desde && d <= H; }).reduce((s, l) => s + l.valor, 0);
     let restante = orc - gasto, saldo = null;
     if (env.id === "vr") {
@@ -471,7 +482,7 @@ function telaHoje() {
     <div class="card lista">${pend.map((p) => `
       <div class="pend">
         <div class="d"><div>${esc(p.categoria === "saldo_vr" ? "Saldo do VR informado" : (p.descricao || (CATS.find((c) => c.id === p.categoria) || {}).nome || p.categoria))}</div>
-          <div class="num">${ddmm(p.data)} · ${esc(p.forma)}${p.categoria !== "saldo_vr" && envDaCat(p.categoria, p.forma) ? " · " + esc(envNome[envDaCat(p.categoria, p.forma)]) : ""}${p.enviado ? " · enviado" : ""}</div></div>
+          <div class="num">${ddmm(p.data)} · ${esc(p.categoria === "mover" ? "entre envelopes" : p.forma)}${p.categoria !== "saldo_vr" && envDaCat(p.categoria, p.forma) ? " · " + esc(envNome[envDaCat(p.categoria, p.forma)]) : ""}${p.enviado ? " · enviado" : ""}</div></div>
         <span class="v num">${brl(p.valor)}</span>
         <button class="x" data-remover="${esc(p.id)}" aria-label="Remover">×</button>
       </div>`).join("")}
@@ -762,7 +773,7 @@ let folhaAberta = null;
 function abrir(id) { folhaAberta = $(id); $("#veu").classList.remove("hidden"); folhaAberta.classList.remove("hidden"); }
 function fechar() { if (folhaAberta) folhaAberta.classList.add("hidden"); $("#veu").classList.add("hidden"); folhaAberta = null; }
 
-const L_ = { tipo: "gasto", cat: null, forma: null };
+const L_ = { tipo: "gasto", cat: null, forma: null, de: null, para: null };
 function chips(el, itens, sel, onPick) {
   el.innerHTML = itens.map((x) => `<button type="button" class="chip" data-id="${esc(x.id)}" aria-pressed="${x.id === sel}">${esc(x.nome)}</button>`).join("");
   el.onclick = (e) => { const b = e.target.closest("[data-id]"); if (b) onPick(b.dataset.id); };
@@ -770,8 +781,13 @@ function chips(el, itens, sel, onPick) {
 function renderLancar() {
   const saldo = L_.tipo === "saldo";
   document.querySelectorAll("#f-lancar .seg button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.tipo === L_.tipo));
-  $("#h-lancar").textContent = saldo ? "Saldo que aparece no app do VR" : "Novo gasto";
-  $("#l-bloco-gasto").style.display = saldo ? "none" : "grid";
+  const mover = L_.tipo === "mover";
+  $("#h-lancar").textContent = saldo ? "Saldo que aparece no app do VR" : mover ? "Mover entre envelopes" : "Novo gasto";
+  $("#l-bloco-gasto").style.display = saldo || mover ? "none" : "grid";
+  $("#l-bloco-mover").style.display = mover ? "grid" : "none";
+  const movEnvs = D.envelopes.filter((e) => e.id !== "vr").map((e) => ({ id: e.id, nome: e.nome }));
+  chips($("#l-de"), movEnvs, L_.de, (id) => { L_.de = id; renderLancar(); });
+  chips($("#l-para"), movEnvs, L_.para, (id) => { L_.para = id; renderLancar(); });
   chips($("#l-cats"), CATS, L_.cat, (id) => { L_.cat = id; if (id === "comida_fora" && !L_.forma) L_.forma = "VR"; renderLancar(); });
   chips($("#l-formas"), FORMAS, L_.forma, (id) => { L_.forma = id; renderLancar(); });
   previaLancar();
@@ -781,6 +797,14 @@ function previaLancar() {
   if (L_.tipo === "saldo") {
     prev.innerHTML = isFinite(v) && v >= 0 ? (() => { const e = calcularEnvelopes(hojeISO(), { data, valor: v, envelope: "vr", saldo_vr: true }).find((x) => x.id === "vr"); return `VR fica em <b>${brl(e.porDia)}/dia</b> até ${ddmm(e.renovaEm)}.`; })() : "Digite o saldo do app do VR.";
     $("#l-salvar").disabled = !(isFinite(v) && v >= 0); return;
+  }
+  if (L_.tipo === "mover") {
+    const ok = isFinite(v) && v > 0 && L_.de && L_.para && L_.de !== L_.para;
+    $("#l-salvar").disabled = !ok;
+    if (!ok) { prev.textContent = !L_.de ? "Escolha de onde tirar." : !L_.para ? "Escolha para onde vai." : L_.de === L_.para ? "Escolha envelopes diferentes." : "Digite o valor."; return; }
+    const h = hojeISO(), A = calcularEnvelopes(h), B = calcularEnvelopes(h, { mover: true, data, valor: v, de: L_.de, para: L_.para });
+    const linha = (id) => { const a = A.find((x) => x.id === id), b = B.find((x) => x.id === id); return `${esc(a.nome)}: ${brl0(a.restante)} → <b>${brl0(b.restante)}</b>`; };
+    prev.innerHTML = `${linha(L_.de)}<br>${linha(L_.para)}`; return;
   }
   const env = L_.cat ? envDaCat(L_.cat, L_.forma) : null;
   $("#l-salvar").disabled = !(isFinite(v) && v > 0 && L_.cat && L_.forma);
@@ -793,6 +817,13 @@ function previaLancar() {
 function salvarLancamento() {
   const v = parseValor($("#l-valor").value); if (!isFinite(v)) return;
   const p = pendentes(), saldo = L_.tipo === "saldo";
+  if (L_.tipo === "mover") {
+    const nome = (id) => (D.envelopes.find((e) => e.id === id) || {}).nome || id;
+    p.push({ id: "cel-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), data: $("#l-data").value || hojeISO(),
+             descricao: `${nome(L_.de)} → ${nome(L_.para)}`, valor: Math.round(v * 100) / 100,
+             forma: `${L_.de}>${L_.para}`, categoria: "mover", enviado: false });
+    salvarPendentes(p); fechar(); telaHoje(); return;
+  }
   const desc = saldo ? "Saldo do app do VR" : ($("#l-desc").value.trim() || (CATS.find((c) => c.id === L_.cat) || {}).nome);
   p.push({ id: "cel-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), data: $("#l-data").value || hojeISO(),
            descricao: desc.replace(/[;\n]/g, ","), valor: Math.round(v * 100) / 100,
