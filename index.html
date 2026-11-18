@@ -427,22 +427,32 @@ const pill = (r) => `<span class="pill ${r}"><span class="ic" aria-hidden="true"
 function telaHoje() {
   const hoje = hojeISO(), envs = calcularEnvelopes(hoje);
   const porId = Object.fromEntries(envs.map((e) => [e.id, e]));
+  const ate = (e) => ddmm(isoDe(dn(e.renovaEm) - 1));
   const cardEnv = (e) => {
     const pct = e.orc > 0 ? Math.max(0, Math.min(1, e.restante / e.orc)) : 0;
-    const grande = e.porDia !== null
-      ? `${brl(e.porDia)}<small> /dia</small>`
-      : `${brl0(e.restante)}<small> ${e.acumula ? "guardado" : "restam"}</small>`;
+    const grande = `${brl0(Math.max(e.restante, 0))}<small> ${e.acumula ? "guardado" : `até ${ate(e)}`}</small>`;
     const l3 = e.acumula ? `+ R$ ${e.mensal} todo mês · ${esc(e.obs)}`
-      : (e.porDia !== null ? `resta ${brl(e.restante)} · ` : "") + `renova ${ddmm(e.renovaEm)} (${e.diasRest} ${e.diasRest === 1 ? "dia" : "dias"})`;
+      : (e.porDia !== null ? `se espalhar: ~${brl0(e.porDia)}/dia · ` : "") + `renova ${ddmm(e.renovaEm)}`
+        + (e.restante < 0 ? ` · <b style="color:var(--crit-ink)">passou ${brl0(-e.restante)}</b>` : "");
     return `<div class="env">
       <div class="l1"><span class="nome">${esc(e.nome)}</span>${pill(e.ritmo)}</div>
       <div class="grande num">${grande}</div>
       <div class="meter" role="img" aria-label="${Math.round(pct * 100)}% do envelope ainda disponível"><i style="width:${(pct * 100).toFixed(1)}%"></i></div>
       <div class="l3 num">${l3}</div></div>`;
   };
+  const livres = envs.filter((e) => e.livre && !e.acumula);
+  const totalLivre = livres.reduce((s, e) => s + Math.max(e.restante, 0), 0);
+  const resumo = `<div class="card">
+    <div class="env">
+      <div class="l1"><span class="nome">Pode gastar</span><span class="sub num" style="color:var(--text-3);font-size:13px">somando os envelopes</span></div>
+      <div class="grande num">${brl0(totalLivre)}</div>
+    </div>
+    <div class="lista" style="border-top:1px solid var(--line)">${livres.map((e) => `<div class="kv"><span>${esc(e.nome)}<small class="obs">até ${ate(e)}</small></span><span class="num">${brl0(Math.max(e.restante, 0))}</span></div>`).join("")}</div>
+    <div class="dica">Cada envelope tem a sua data. Gastou tudo antes? Fica zerado até renovar. Eventos é dos presentes; Saúde só se precisar. Pedágio e estacionamento saem do caixa (Carro).</div>
+  </div>`;
   const porDiaEnvs = envs.filter((e) => e.por_dia), outros = envs.filter((e) => !e.por_dia);
   const vr = porId.vr, lz = porId.lazer;
-  const dica = vr && lz ? `<div class="dica">Comida fora: <b>VR primeiro</b> (${brl(vr.porDia || 0)}/dia). Se o VR acabar, sai do Lazer (${brl(lz.porDia || 0)}/dia).</div>` : "";
+  const dica = vr && lz ? `<div class="dica">Comida fora: <b>VR primeiro</b> (${brl0(Math.max(vr.restante, 0))} até ${ate(vr)}). Se o VR acabar, sai do Lazer.</div>` : "";
 
   const pend = pendentes();
   const envNome = Object.fromEntries(D.envelopes.map((e) => [e.id, e.nome]));
@@ -459,8 +469,10 @@ function telaHoje() {
     </div>` : "";
 
   $("#t-hoje").innerHTML = `
+    ${resumo}
+    <h2>Envelopes do dia a dia</h2>
     <div class="card lista">${porDiaEnvs.map(cardEnv).join("")}${dica}</div>
-    <div style="margin-top:10px"><button class="btn sec" id="b-simular">Simular uma compra</button></div>
+    <div style="margin-top:10px"><button class="btn sec" id="b-simular">E se eu gastar…</button></div>
     ${pendHTML}
     <h2>Outros envelopes</h2>
     <div class="card lista">${outros.map(cardEnv).join("")}</div>`;
@@ -785,14 +797,14 @@ function marcarEnviados() { salvarPendentes(pendentes().map((p) => ({ ...p, envi
 /* ---------------- simulador ---------------- */
 let simEnv = "vr";
 function renderSimular() {
-  const envs = D.envelopes.filter((e) => e.por_dia || e.id === "mercado");
+  const envs = D.envelopes.filter((e) => e.livre);
   chips($("#s-envs"), envs.map((e) => ({ id: e.id, nome: e.nome })), simEnv, (id) => { simEnv = id; renderSimular(); });
   const v = parseValor($("#s-valor").value), out = $("#s-prev");
   if (!isFinite(v) || v <= 0) { out.textContent = "Digite um valor."; return; }
   const h = hojeISO(), a = calcularEnvelopes(h).find((x) => x.id === simEnv), d = calcularEnvelopes(h, { data: h, valor: v, envelope: simEnv }).find((x) => x.id === simEnv);
-  out.innerHTML = a.porDia !== null
-    ? `${esc(a.nome)} hoje: ${brl(a.porDia)}/dia<br>Depois de ${brl(v)}: <b>${brl(d.porDia)}/dia</b> até ${ddmm(d.renovaEm)}${d.restante < 0 ? "<br><b>Estoura o envelope</b> em " + brl(-d.restante) : ""}`
-    : `${esc(a.nome)}: restam ${brl0(a.restante)} → <b>${brl0(d.restante)}</b>`;
+  const ateD = ddmm(isoDe(dn(d.renovaEm) - 1));
+  out.innerHTML = `${esc(a.nome)}: tem ${brl0(Math.max(a.restante, 0))} até ${ateD}<br>Depois de ${brl(v)}: <b>${d.restante >= 0 ? `sobram ${brl0(d.restante)}` : `estoura em ${brl0(-d.restante)}`}</b>`
+    + (d.porDia !== null && d.restante > 0 ? `<br><span style="color:var(--text-3)">≈ ${brl0(d.porDia)}/dia até ${ateD}</span>` : "");
 }
 
 /* ---------------- abrir / carregar ---------------- */
