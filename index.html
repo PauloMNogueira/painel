@@ -441,14 +441,24 @@ function telaHoje() {
       <div class="l3 num">${l3}</div></div>`;
   };
   const livres = envs.filter((e) => e.livre && !e.acumula);
-  const totalLivre = livres.reduce((s, e) => s + Math.max(e.restante, 0), 0);
+  /* até o fim do mês: envelope que acaba antes → tudo; que passa do mês (Lazer) → só a parte até o dia 30 */
+  const H = dn(hoje), [hy, hm] = hoje.split("-").map(Number), fimMes = dn(isoDe(Date.UTC(hy, hm, 0) / 864e5));
+  const noMes = (e) => {
+    const r = Math.max(e.restante, 0), fimEnv = dn(e.renovaEm) - 1;
+    if (fimEnv <= fimMes || e.porDia === null) return { v: r, parcial: false };
+    return { v: Math.min(r, e.porDia * (fimMes - H + 1)), parcial: true };
+  };
+  const totalMes = livres.reduce((s, e) => s + noMes(e).v, 0);
+  const mesAtual = (D.meses || []).find((m) => m.mes === hoje.slice(0, 7));
   const resumo = `<div class="card">
     <div class="env">
-      <div class="l1"><span class="nome">Pode gastar</span><span class="sub num" style="color:var(--text-3);font-size:13px">somando os envelopes</span></div>
-      <div class="grande num">${brl0(totalLivre)}</div>
+      <div class="l1"><span class="nome">Pode gastar este mês</span><span class="sub num" style="color:var(--text-3);font-size:13px">até ${ddmm(isoDe(fimMes))}</span></div>
+      <div class="grande num">${brl0(totalMes)}</div>
     </div>
-    <div class="lista" style="border-top:1px solid var(--line)">${livres.map((e) => `<div class="kv"><span>${esc(e.nome)}<small class="obs">até ${ate(e)}</small></span><span class="num">${brl0(Math.max(e.restante, 0))}</span></div>`).join("")}</div>
-    <div class="dica">Cada envelope tem a sua data. Gastou tudo antes? Fica zerado até renovar. Eventos é dos presentes; Saúde só se precisar. Pedágio e estacionamento saem do caixa (Carro).</div>
+    <div class="lista" style="border-top:1px solid var(--line)">${livres.map((e) => { const n = noMes(e);
+      return `<div class="kv"><span>${esc(e.nome)}<small class="obs">${n.parcial ? `tem ${brl0(Math.max(e.restante, 0))} até ${ate(e)}; o resto fica para dezembro` : `até ${ate(e)}`}</small></span><span class="num">${brl0(n.v)}</span></div>`; }).join("")}
+    </div>
+    <div class="dica">${mesAtual ? `Contas, faturas e parcelas do mês (${brl0(mesAtual.gastos)}) já estão fora desse valor.${mesAtual.sobra < 0 ? ` Mesmo sem esses gastos, o mês fecha em <b>${brl0(mesAtual.sobra)}</b>: quem cobre é o saldo que já estava na conta.` : ""}<br>` : ""}Eventos é dos presentes e Saúde só se precisar: ficam fora. Pedágio e estacionamento saem do caixa (Carro).</div>
   </div>`;
   const porDiaEnvs = envs.filter((e) => e.por_dia), outros = envs.filter((e) => !e.por_dia);
   const vr = porId.vr, lz = porId.lazer;
